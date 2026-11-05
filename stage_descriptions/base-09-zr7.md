@@ -71,17 +71,18 @@ $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 The ids have to match exactly. The tester will also turn your ids back into
 text and print what your engine wrote, " the capital of the French Republic".
 
-This test takes much longer than the earlier ones, because your engine reads
-548 MB and runs all 12 layers for every token.
+This test takes longer than the earlier ones. The tester first downloads GPT-2's
+weights, which takes 10 to 15 seconds, and then your engine runs all 12 layers
+for every token.
 {{#lang_is_python}}
 A Python engine that reuses keys and values takes about 45 seconds on a laptop,
-and can take longer on the test servers.
+and can take longer on the test servers. The tester stops your program after
+300 seconds, so an engine that recomputes the whole sequence at every step can
+run out of time.
 {{/lang_is_python}}
 {{^lang_is_python}}
 A {{language_name}} engine finishes in a few seconds.
 {{/lang_is_python}}
-The tester stops your program after 180 seconds, so an engine that recomputes
-the whole sequence at every step can run out of time.
 
 ### Notes
 
