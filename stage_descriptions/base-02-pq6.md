@@ -4,9 +4,10 @@ position embeddings.
 ### Why embed?
 
 GPT-2 doesn't read words. It reads token ids, integers that each stand for a
-word or a piece of one. For example, the word "The" is token 464. Later stages
-multiply numbers, so each id first has to become a row of numbers. The row you
-look up for a token is called its embedding.
+word or a piece of one. For example, "The" is token 464. An id is only a label:
+464 isn't "more" than 286 in any useful way. So GPT-2 looks up a row of 768
+numbers for each id, and later stages do their arithmetic on those rows. The row
+for a token is called its embedding.
 
 GPT-2 stores two tables for this. `wte.weight` is the token embedding table,
 with one row per token id. `wpe.weight` is the position embedding table, with
