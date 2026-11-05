@@ -78,10 +78,12 @@ text and print what your engine wrote, " the capital of the French Republic".
 ### Notes
 
 - To run GPT-2 on your own machine, download its weights from
-  [Hugging Face](https://huggingface.co/openai-community/gpt2), and use the
-  `config.json` above:
+  [Hugging Face](https://huggingface.co/openai-community/gpt2) into a folder
+  outside your repository, so the 548 MB file never ends up in a commit. Then
+  use the `config.json` above:
 
     ```bash
+    mkdir -p /tmp/testing && cd /tmp/testing
     curl -L -o model.safetensors https://huggingface.co/openai-community/gpt2/resolve/main/model.safetensors
     ```
 

@@ -22,4 +22,13 @@ Temperature, then softmax, then sort by probability with ties broken by the lowe
 
 ## What the tester runs today
 
-Stages 2 through 8 run on hand-sized files so the first case of each stage can be checked by hand. The published 124M file is cached locally and is not yet a tester case. The catalog sentence that quotes a real greedy continuation is still waiting on that run.
+Stages 2 through 8 run on hand-sized files so the first case of each stage can be checked by hand.
+
+Stage 9 (`zr7`) runs the learner's `generate` on the published 124M file. The tester reads it from `CODECRAFTERS_GPT2_WEIGHTS_PATH`, or downloads it once and checks its SHA-256, then links it into the working directory.
+
+- The prompt is "The capital of France is", ids `[464, 3139, 286, 4881, 318]`. GPT-2's greedy continuation is " the capital of the French Republic", ids `[262, 3139, 286, 262, 4141, 2066]`, and the tester requires those six exactly.
+- The stage stops at six tokens because each of those steps has a gap of at least 0.33 between the top two logits. The seventh step's gap is 0.007, small enough for a float32 engine and a float64 engine to disagree.
+- The program gets 180 seconds. The Python reference, which reads weights through `memoryview(...).cast("f")`, takes about 42 seconds on an Apple Silicon laptop and uses 1.1 GB. Unpacking every weight into a Python `float` uses 6.2 GB, which is why the stage tells Python learners how to store them.
+- The tester decodes the learner's ids with GPT-2's `vocab.json` and prints the text, on a pass and on a failure.
+
+Learners run GPT-2 at home with the download steps in that stage's Notes and in the starter README.

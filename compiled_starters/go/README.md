@@ -49,3 +49,17 @@ alias myengine=/path/to/your/repo/your_program.sh
 mkdir -p /tmp/testing && cd /tmp/testing
 myengine inspect model.safetensors
 ```
+
+# Running GPT-2
+
+The last stage runs your engine on GPT-2's real weights. To try it locally,
+download them into your testing folder, outside this repository, so the 548 MB
+file never ends up in a commit:
+
+```sh
+mkdir -p /tmp/testing && cd /tmp/testing
+curl -L -o model.safetensors https://huggingface.co/openai-community/gpt2/resolve/main/model.safetensors
+```
+
+That stage's instructions list the `config.json`, `ids.json`, and `tokens.json`
+to run it with.
