@@ -8,24 +8,23 @@ word or a piece of one. For example, the word "The" is token 464. Later stages
 multiply numbers, so each id first has to become a row of numbers. The row you
 look up for a token is called its embedding.
 
-GPT-2 stores two tables for this. `wte.weight` is the token embedding table, and
-its row 464 holds the numbers for "The". `wpe.weight` is the position embedding
-table, and its row 0 holds the numbers for the first position. This stage adds
-those two rows. The same word later in the sentence adds a later position row.
-The letters below stand in for the numbers.
+GPT-2 stores two tables for this. `wte.weight` is the token embedding table,
+with one row per token id. `wpe.weight` is the position embedding table, with
+one row per position in the prompt. For each token, this stage adds its row from
+`wte.weight` to the row for its position from `wpe.weight`.
 
-```text
-"The" at the start          "The" later
+For example, take the prompt "The capital of", whose ids are `[464, 3139, 286]`:
 
-wte.weight row 464          wte.weight row 464
-[ a, b, c ]                 [ a, b, c ]
+| Position | Token | Row from `wte.weight` | Row from `wpe.weight` |
+| --- | --- | --- | --- |
+| 0 | "The" | row 464 | row 0 |
+| 1 | "capital" | row 3139 | row 1 |
+| 2 | "of" | row 286 | row 2 |
 
-wpe.weight row 0            wpe.weight row 2
-[ d, e, f ]                 [ p, q, r ]
-
-add                         add
-[ a+d, b+e, c+f ]           [ a+p, b+q, c+r ]
-```
+Each token's embedding is the sum of its two rows. The token row says which word
+it is, and the position row says where it sits. If "The" appeared again at
+position 5, it would use the same row 464 from `wte.weight` but row 5 from
+`wpe.weight`, so its embedding would be different.
 
 ### The `embed` command
 
