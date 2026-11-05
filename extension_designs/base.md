@@ -24,7 +24,7 @@ Temperature, then softmax, then sort by probability with ties broken by the lowe
 
 Stages 2 through 8 run on hand-sized files so the first case of each stage can be checked by hand.
 
-Stage 9 (`zr7`) runs the learner's `generate` on the published 124M file. The tester reads it from `CODECRAFTERS_GPT2_WEIGHTS_PATH`, or downloads it once and checks its SHA-256, then links it into the working directory.
+Stage 9 (`zr7`) runs the learner's `generate` on the published 124M file. The tester reads it from `CODECRAFTERS_GPT2_WEIGHTS_PATH`, or downloads it into the user cache directory and checks its SHA-256, then links it into the working directory. On a fresh test container that download happens on every run.
 
 - The prompt is "The capital of France is", ids `[464, 3139, 286, 4881, 318]`. GPT-2's greedy continuation is " the capital of the French Republic", ids `[262, 3139, 286, 262, 4141, 2066]`, and the tester requires those six exactly.
 - The stage stops at six tokens because each of those steps has a gap of at least 0.33 between the top two logits. The seventh step's gap is 0.007, small enough for a float32 engine and a float64 engine to disagree.
