@@ -57,6 +57,10 @@ Run these steps on the input rows:
 Attention moves information between rows. The MLP in steps 5 and 6 then works on
 each row alone, on what that row now holds.
 
+Copy constants like 0.00001 and 0.044715 exactly as written. They're part of
+GPT-2's definition, so there's nothing to work out about them, and a different
+value changes the output.
+
 ### Example
 
 In this example's file, both layer norms have weight `[1, 1]` and bias `[0, 0]`,

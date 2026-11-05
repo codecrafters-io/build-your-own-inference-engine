@@ -43,9 +43,24 @@ start with `h.` and the layer number, so for layer 0 they are:
 | `h.0.attn.c_proj.weight` | `[n_embd, n_embd]` | step 6, multiplied |
 | `h.0.attn.c_proj.bias` | `[n_embd]` | step 6, added |
 
-For layer 1, the names start with `h.1.` instead. A row of `n_embd` numbers
-times `c_attn.weight` gives `3 * n_embd` numbers, which is why its shape lists
-the row's length first.
+For layer 1, the names start with `h.1.` instead.
+
+The steps below use two operations on lists of numbers. The dot product of two
+lists of the same length multiplies them pair by pair and adds up the results.
+Multiplying a row by a matrix is a loop of dot products. If the row has `n`
+numbers and the matrix has shape `[n, m]`, the result has `m` numbers, and
+number `j` is the dot product of the row with column `j` of the matrix:
+
+```text
+row     [1, 2]
+matrix  [[1, 0, 2],
+         [3, 1, 0]]
+result  [1*1 + 2*3, 1*0 + 2*1, 1*2 + 2*0] = [7, 2, 2]
+```
+
+Whenever this stage or a later one says to multiply by a weight, it means this.
+It's also why `c_attn.weight` has shape `[n_embd, 3 * n_embd]`: a row of
+`n_embd` numbers goes in, and `3 * n_embd` numbers come out.
 
 For each position, compute its output row like this:
 

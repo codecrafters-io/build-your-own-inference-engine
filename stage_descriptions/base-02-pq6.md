@@ -9,6 +9,10 @@ word or a piece of one. For example, "The" is token 464. An id is only a label:
 numbers for each id, and later stages do their arithmetic on those rows. The row
 for a token is called its embedding.
 
+Numbers like 768 are GPT-2's sizes. You don't need to know why they have those
+values. Your program reads every size it needs from the files the tester gives
+it.
+
 GPT-2 stores two tables for this. `wte.weight` is the token embedding table,
 with one row per token id. `wpe.weight` is the position embedding table, with
 one row per position in the prompt. For each token, this stage adds its row from
