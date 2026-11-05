@@ -24,10 +24,12 @@ with the weights, and you can skip it because your attention already drops the
 later scores.
 
 Keep each number as a 32-bit float, read from the file's bytes. Storing every
-number as a separate object multiplies the memory the weights need.
+number as a separate object multiplies the memory the weights need, and the test
+server gives your program about 2.5 GB.
 
 {{#lang_is_python}}
-A Python `float` takes 24 bytes, so a list of GPT-2's numbers needs about 6 GB.
+A Python `float` takes 24 bytes, so a list of GPT-2's numbers needs about 6 GB,
+more than the test server allows.
 A `memoryview` reads the same bytes as floats, with no copy:
 
 ```python
@@ -72,7 +74,7 @@ The ids have to match exactly. The tester will also turn your ids back into
 text and print what your engine wrote, " the capital of the French Republic".
 
 This test takes longer than the earlier ones. The tester first downloads GPT-2's
-weights, which takes 10 to 15 seconds, and then your engine runs all 12 layers
+weights, which takes 5 to 15 seconds, and then your engine runs all 12 layers
 for every token.
 {{#lang_is_python}}
 A Python engine that reuses keys and values takes about 45 seconds on a laptop,
