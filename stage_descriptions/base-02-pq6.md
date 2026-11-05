@@ -76,9 +76,10 @@ same token at two positions, and a sequence whose ids are not in order.
   send debug output to stderr.
 {{#lang_is_python}}
 - We recommend keeping each tensor as a
-  [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast) of the file's
-  bytes, cast to floats, rather than a list. A later stage loads GPT-2's real weights, 548
-  MB of them, and a list of Python floats would need about 6 GB:
+  [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
+  of the file's bytes, cast to floats, rather than a list. A later stage loads
+  GPT-2's real weights, 548 MB of them, and a list of Python floats would need
+  about 6 GB:
 
     ```python
     values = memoryview(data)[start:end].cast("f")
