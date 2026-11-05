@@ -45,10 +45,6 @@ Decode each tensor into a `Vec<f32>` with `f32::from_le_bytes`. That keeps the
 weights at about 550 MB.
 {{/lang_is_rust}}
 
-The tester allows 180 seconds. A Go or Rust engine finishes in a few seconds. A
-Python engine that reuses keys and values takes about 45 seconds on a laptop,
-and one that recomputes the whole sequence at every step can run out of time.
-
 ### Tests
 
 The tester will link GPT-2's weights to `model.safetensors`, write
@@ -74,6 +70,18 @@ $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 
 The ids have to match exactly. The tester will also turn your ids back into
 text and print what your engine wrote, " the capital of the French Republic".
+
+This test takes much longer than the earlier ones, because your engine reads
+548 MB and runs all 12 layers for every token.
+{{#lang_is_python}}
+A Python engine that reuses keys and values takes about 45 seconds on a laptop,
+and can take longer on the test servers.
+{{/lang_is_python}}
+{{^lang_is_python}}
+A {{language_name}} engine finishes in a few seconds.
+{{/lang_is_python}}
+The tester stops your program after 180 seconds, so an engine that recomputes
+the whole sequence at every step can run out of time.
 
 ### Notes
 
