@@ -75,8 +75,9 @@ same token at two positions, and a sequence whose ids are not in order.
 - The two rows you add have the same length. Print one JSON array to stdout, and
   send debug output to stderr.
 {{#lang_is_python}}
-- We recommend keeping each tensor as a `memoryview` of the file's bytes, cast
-  to floats, rather than a list. A later stage loads GPT-2's real weights, 548
+- We recommend keeping each tensor as a
+  [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast) of the file's
+  bytes, cast to floats, rather than a list. A later stage loads GPT-2's real weights, 548
   MB of them, and a list of Python floats would need about 6 GB:
 
     ```python
