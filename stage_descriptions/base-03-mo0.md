@@ -31,9 +31,19 @@ The tester writes four files. `config.json` uses the same names as GPT-2:
 `layer.json` is the layer number, `0` in this example. `input.json` is a JSON
 array of rows, one row per position. This example's input is `[[1], [2]]`.
 
-The layer's attention weights are `h.<layer>.attn.c_attn.weight`,
-`h.<layer>.attn.c_attn.bias`, `h.<layer>.attn.c_proj.weight`, and
-`h.<layer>.attn.c_proj.bias`.
+`model.safetensors` holds four attention tensors for each layer. Their names
+start with `h.` and the layer number, so for layer 0 they are:
+
+| Tensor | Shape | Used in |
+| --- | --- | --- |
+| `h.0.attn.c_attn.weight` | `[n_embd, 3 * n_embd]` | step 1, multiplied |
+| `h.0.attn.c_attn.bias` | `[3 * n_embd]` | step 1, added |
+| `h.0.attn.c_proj.weight` | `[n_embd, n_embd]` | step 6, multiplied |
+| `h.0.attn.c_proj.bias` | `[n_embd]` | step 6, added |
+
+For layer 1, the names start with `h.1.` instead. A row of `n_embd` numbers
+times `c_attn.weight` gives `3 * n_embd` numbers, which is why its shape lists
+the row's length first.
 
 1. Multiply each row by `c_attn.weight` and add `c_attn.bias`. The result is
    three blocks side by side: query, key, and value. Each block has `n_embd`
