@@ -10,9 +10,15 @@ current one. "is" looks at "The", "capital", "of", "France", and "is", and its
 output row depends on all five. It does not look at a word that comes after it,
 because that word has not been written yet.
 
-GPT-2 runs this mix 12 times on each row, once per head. Each head uses 64 of
-the 768 numbers, and divides its scores by 8, the square root of 64. `n_head` is
-12 in [GPT-2's config](https://huggingface.co/gpt2/blob/main/config.json).
+GPT-2 doesn't mix a row as one block of 768 numbers. It splits the row into 12
+slices of 64 numbers, called heads, and each head does its own mix on its slice,
+so different heads can pick up different links between words. The 12 results
+are then joined back into one row of 768. `n_head` is 12 in
+[GPT-2's config](https://huggingface.co/gpt2/blob/main/config.json).
+
+Inside a head, a score says how much one token should look at another. Each
+head divides its scores by 8, the square root of its 64 numbers, so the scores
+don't grow too large as the slices get wider.
 
 ### The `attn` command
 
