@@ -22,14 +22,16 @@ don't grow too large as the slices get wider.
 
 ### The `attn` command
 
-The tester writes four files. `config.json` uses the same names as GPT-2:
+The tester writes four files. `model.safetensors` holds the weights.
+`config.json` holds the sizes, using the same names as GPT-2's config:
 
 ```json
 { "n_embd": 1, "n_head": 1, "n_layer": 1, "n_positions": 4, "vocab_size": 2 }
 ```
 
-`layer.json` is the layer number, `0` in this example. `input.json` is a JSON
-array of rows, one row per position. This example's input is `[[1], [2]]`.
+`layer.json` holds the number of the layer to run, `0` in this example.
+`input.json` is a JSON array of rows, one row per position. This example's input
+is `[[1], [2]]`.
 
 `model.safetensors` holds four attention tensors for each layer. Their names
 start with `h.` and the layer number, so for layer 0 they are:
@@ -45,24 +47,56 @@ For layer 1, the names start with `h.1.` instead. A row of `n_embd` numbers
 times `c_attn.weight` gives `3 * n_embd` numbers, which is why its shape lists
 the row's length first.
 
-1. Multiply each row by `c_attn.weight` and add `c_attn.bias`. The result is
-   three blocks side by side: query, key, and value. Each block has `n_embd`
-   numbers.
-2. Split each block into `n_head` heads. The head size is `n_embd / n_head`.
-3. A score is the dot product of a query and a key, divided by the square root
-   of the head size. This file's head size is 1, so you divide by 1.
-4. A position may only use itself and earlier positions. Drop the later scores
-   before the softmax.
-5. Softmax the scores that remain. Softmax turns scores into weights: raise `e`
-   to each score, then divide each result by the sum of all of them. The
-   weighted sum of the values is that head's output.
-6. Join the heads, multiply by `c_proj.weight`, and add `c_proj.bias`.
+For each position, compute its output row like this:
 
-In this file the weights copy the input into the query, the key, and the value,
-and the projection puts that result back unchanged. Position 0's only score is
-`1 * 1`. The softmax of one score is 1, so the output is `[1]`. Position 1's
-scores are 2 and 4. Their softmax weights are about 0.119 and 0.881, and
-`0.119 * 1 + 0.881 * 2` is about 1.881.
+1. Multiply the position's row by `c_attn.weight` and add `c_attn.bias`. This
+   gives `3 * n_embd` numbers. The first `n_embd` are the position's query, the
+   next `n_embd` are its key, and the last `n_embd` are its value. The query is
+   what this position is looking for, the key is what it offers to a position
+   that looks at it, and the value is what it hands over when it's chosen.
+2. Split the query, the key, and the value into `n_head` heads. Each head gets
+   `n_embd / n_head` numbers, called the head size. Steps 3 to 5 run separately
+   for each head.
+3. Score this position against itself and every earlier position. A score is
+   the dot product of this position's query with the other position's key,
+   divided by the square root of the head size. Skip later positions.
+4. Softmax the scores: raise `e` to each score, then divide each result by the
+   sum of all of them. The results are weights that add up to 1.
+5. Multiply each scored position's value by its weight, and add them up. That
+   sum is the head's output.
+6. Join the heads' outputs back into one row of `n_embd` numbers, multiply it by
+   `c_proj.weight`, and add `c_proj.bias`. Each head only saw its own slice, and
+   this multiply lets every number in the output row draw on every head.
+
+### Example
+
+In this example's file, the attention tensors are:
+
+| Tensor | Value |
+| --- | --- |
+| `h.0.attn.c_attn.weight` | `[[1, 1, 1]]` |
+| `h.0.attn.c_attn.bias` | `[0, 0, 0]` |
+| `h.0.attn.c_proj.weight` | `[[1]]` |
+| `h.0.attn.c_proj.bias` | `[0]` |
+
+There is one head of size 1, so step 3 divides by 1. Step 1 copies each input
+number into the query, the key, and the value:
+
+| Position | Input | Query | Key | Value |
+| --- | --- | --- | --- | --- |
+| 0 | 1 | 1 | 1 | 1 |
+| 1 | 2 | 2 | 2 | 2 |
+
+Position 0 can only use itself. Its one score is its query times its key,
+`1 * 1 = 1`. A single score always gets a weight of 1, so the output is
+position 0's value, `1`.
+
+Position 1 uses positions 0 and 1. Its query is 2, so its scores are
+`2 * 1 = 2` and `2 * 2 = 4`. Softmax turns them into weights of about 0.119 and
+0.881. The output is `0.119 * 1 + 0.881 * 2`, about 1.881.
+
+`c_proj.weight` is 1 and `c_proj.bias` is 0, so step 6 leaves both outputs
+unchanged.
 
 Print one JSON array of rows:
 
@@ -90,7 +124,6 @@ two heads, and layer 1.
 
 ### Notes
 
-- Read `n_embd` and `n_head` from `config.json`. The head size is
-  `n_embd / n_head`.
-- Softmax runs over the positions a token is allowed to see, and the weights for
-  one query add up to 1.
+- With GPT-2's real weights, scores can be large enough that raising `e` to them
+  overflows. Subtract the largest score from every score first. The weights come
+  out the same, because softmax only depends on the differences between scores.
