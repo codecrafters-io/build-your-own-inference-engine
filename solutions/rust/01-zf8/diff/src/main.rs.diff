@@ -1,139 +1,115 @@
-@@ -1,78 +1,74 @@
+@@ -1,93 +1,89 @@
+ use std::collections::HashMap;
  #[allow(unused_imports)]
  use std::env;
- #[allow(unused_imports)]
  use std::fs;
- #[allow(unused_imports)]
- use std::io::Read;
- #[allow(unused_imports)]
  use std::process;
+
+ /// One table of numbers from a safetensors file.
+ #[allow(dead_code)]
+ struct Tensor {
+     dtype: String,
+     shape: Vec<u64>,
+     values: Vec<f32>,
+ }
+
+ /// Reads every tensor in a safetensors file, with all of its numbers.
+ #[allow(dead_code)]
+ fn load_tensors(path: &str) -> HashMap<String, Tensor> {
+     let file = fs::read(path).unwrap();
+     let header_len = u64::from_le_bytes(file[0..8].try_into().unwrap()) as usize;
+     let header: serde_json::Map<String, serde_json::Value> =
+         serde_json::from_slice(&file[8..8 + header_len]).unwrap();
+     let data = &file[8 + header_len..];
+
+     let mut tensors = HashMap::new();
+     for (name, info) in &header {
+         if name == "__metadata__" {
+             continue;
+         }
+         let dtype = info["dtype"].as_str().unwrap().to_string();
+         let shape: Vec<u64> = info["shape"]
+             .as_array()
+             .unwrap()
+             .iter()
+             .map(|dim| dim.as_u64().unwrap())
+             .collect();
+         let offsets = info["data_offsets"].as_array().unwrap();
+         let start = offsets[0].as_u64().unwrap() as usize;
+         let end = offsets[1].as_u64().unwrap() as usize;
+         let values: Vec<f32> = data[start..end]
+             .chunks_exact(4)
+             .map(|chunk| {
+                 let bits = u32::from_le_bytes(chunk.try_into().unwrap());
+                 match dtype.as_str() {
+                     "F32" => f32::from_bits(bits),
+                     "I32" => bits as i32 as f32,
+                     _ => {
+                         eprintln!("unsupported dtype {dtype}");
+                         process::exit(1);
+                     }
+                 }
+             })
+             .collect();
+         tensors.insert(
+             name.clone(),
+             Tensor {
+                 dtype,
+                 shape,
+                 values,
+             },
+         );
+     }
+     tensors
+ }
 
  fn main() {
 -    // You can use print statements as follows for debugging, they'll be visible when running tests.
 -    eprintln!("Logs from your program will appear here!");
-+    let args: Vec<String> = env::args().collect();
-+    if args[1] == "inspect" {
-+        let mut file = fs::File::open(&args[2]).unwrap();
-+        let mut len_buf = [0u8; 8];
-+        file.read_exact(&mut len_buf).unwrap();
-+        let header_len = u64::from_le_bytes(len_buf) as usize;
-+        let mut header_buf = vec![0u8; header_len];
-+        file.read_exact(&mut header_buf).unwrap();
-+        let header: serde_json::Map<String, serde_json::Value> =
-+            serde_json::from_slice(&header_buf).unwrap();
-+        let mut data = Vec::new();
-+        file.read_to_end(&mut data).unwrap();
-
+-
 -    // TODO: Uncomment the code below to pass the first stage
 -    // let args: Vec<String> = env::args().collect();
 -    // if args[1] == "inspect" {
--    //     let mut file = fs::File::open(&args[2]).unwrap();
--    //     let mut len_buf = [0u8; 8];
--    //     file.read_exact(&mut len_buf).unwrap();
--    //     let header_len = u64::from_le_bytes(len_buf) as usize;
--    //     let mut header_buf = vec![0u8; header_len];
--    //     file.read_exact(&mut header_buf).unwrap();
--    //     let header: serde_json::Map<String, serde_json::Value> =
--    //         serde_json::from_slice(&header_buf).unwrap();
--    //     let mut data = Vec::new();
--    //     file.read_to_end(&mut data).unwrap();
--    //
--    //     let mut names: Vec<&String> = header
--    //         .keys()
--    //         .filter(|name| name.as_str() != "__metadata__")
--    //         .collect();
+-    //     let tensors = load_tensors(&args[2]);
+-    //     let mut names: Vec<&String> = tensors.keys().collect();
 -    //     names.sort();
--    //
--    //     let mut tensors = Vec::new();
--    //     for name in names {
--    //         let info = &header[name];
--    //         let dtype = info["dtype"].as_str().unwrap();
--    //         let shape: Vec<u64> = info["shape"]
--    //             .as_array()
--    //             .unwrap()
--    //             .iter()
--    //             .map(|dim| dim.as_u64().unwrap())
--    //             .collect();
--    //         let offsets = info["data_offsets"].as_array().unwrap();
--    //         let start = offsets[0].as_u64().unwrap() as usize;
--    //         let end = offsets[1].as_u64().unwrap() as usize;
--    //         let raw = &data[start..end];
--    //         let mut count: u64 = 1;
--    //         for dim in &shape {
--    //             count *= dim;
--    //         }
--    //         let take = count.min(4) as usize;
--    //         let mut first = Vec::new();
--    //         for i in 0..take {
--    //             let bits = u32::from_le_bytes(raw[i * 4..i * 4 + 4].try_into().unwrap());
--    //             let value = if dtype == "F32" {
--    //                 f32::from_bits(bits) as f64
--    //             } else if dtype == "I32" {
--    //                 bits as i32 as f64
--    //             } else {
--    //                 eprintln!("unsupported dtype {dtype}");
--    //                 process::exit(1);
--    //             };
--    //             first.push(value);
--    //         }
--    //         tensors.push(serde_json::json!({
--    //             "name": name,
--    //             "dtype": dtype,
--    //             "shape": shape,
--    //             "first": first,
--    //         }));
--    //     }
--    //     println!("{}", serde_json::to_string(&tensors).unwrap());
+-    //     let summaries: Vec<serde_json::Value> = names
+-    //         .iter()
+-    //         .map(|name| {
+-    //             let tensor = &tensors[*name];
+-    //             let first = &tensor.values[..tensor.values.len().min(4)];
+-    //             serde_json::json!({
+-    //                 "name": name,
+-    //                 "dtype": tensor.dtype,
+-    //                 "shape": tensor.shape,
+-    //                 "first": first,
+-    //             })
+-    //         })
+-    //         .collect();
+-    //     println!("{}", serde_json::to_string(&summaries).unwrap());
 -    // } else {
 -    //     eprintln!("Unknown command {}", args[1]);
 -    //     process::exit(1);
 -    // }
-+        let mut names: Vec<&String> = header
-+            .keys()
-+            .filter(|name| name.as_str() != "__metadata__")
-+            .collect();
++    let args: Vec<String> = env::args().collect();
++    if args[1] == "inspect" {
++        let tensors = load_tensors(&args[2]);
++        let mut names: Vec<&String> = tensors.keys().collect();
 +        names.sort();
-+
-+        let mut tensors = Vec::new();
-+        for name in names {
-+            let info = &header[name];
-+            let dtype = info["dtype"].as_str().unwrap();
-+            let shape: Vec<u64> = info["shape"]
-+                .as_array()
-+                .unwrap()
-+                .iter()
-+                .map(|dim| dim.as_u64().unwrap())
-+                .collect();
-+            let offsets = info["data_offsets"].as_array().unwrap();
-+            let start = offsets[0].as_u64().unwrap() as usize;
-+            let end = offsets[1].as_u64().unwrap() as usize;
-+            let raw = &data[start..end];
-+            let mut count: u64 = 1;
-+            for dim in &shape {
-+                count *= dim;
-+            }
-+            let take = count.min(4) as usize;
-+            let mut first = Vec::new();
-+            for i in 0..take {
-+                let bits = u32::from_le_bytes(raw[i * 4..i * 4 + 4].try_into().unwrap());
-+                let value = if dtype == "F32" {
-+                    f32::from_bits(bits) as f64
-+                } else if dtype == "I32" {
-+                    bits as i32 as f64
-+                } else {
-+                    eprintln!("unsupported dtype {dtype}");
-+                    process::exit(1);
-+                };
-+                first.push(value);
-+            }
-+            tensors.push(serde_json::json!({
-+                "name": name,
-+                "dtype": dtype,
-+                "shape": shape,
-+                "first": first,
-+            }));
-+        }
-+        println!("{}", serde_json::to_string(&tensors).unwrap());
++        let summaries: Vec<serde_json::Value> = names
++            .iter()
++            .map(|name| {
++                let tensor = &tensors[*name];
++                let first = &tensor.values[..tensor.values.len().min(4)];
++                serde_json::json!({
++                    "name": name,
++                    "dtype": tensor.dtype,
++                    "shape": tensor.shape,
++                    "first": first,
++                })
++            })
++            .collect();
++        println!("{}", serde_json::to_string(&summaries).unwrap());
 +    } else {
 +        eprintln!("Unknown command {}", args[1]);
 +        process::exit(1);

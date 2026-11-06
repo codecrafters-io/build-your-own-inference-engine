@@ -37,6 +37,9 @@ position 5, it would use the same row 464 from `wte.weight` but row 5 from
     - `wte.weight`, with one row for each token id, `[[1, 2], [3, 4]]`.
     - `wpe.weight`, with one row for each position, `[[10, 20], [30, 40]]`.
 
+A tensor stores its rows one after another. `wte.weight` holds `1, 2, 3, 4` with
+shape `[2, 2]`, so row 0 is `[1, 2]` and row 1 is `[3, 4]`.
+
 For each id in `ids.json`, take row `id` of `wte.weight` and row `i` of
 `wpe.weight`, where `i` is the id's position, starting at 0. Add the two rows,
 number by number:
@@ -81,13 +84,9 @@ ids are not in order.
 - Print only the JSON to stdout. Send debug output to stderr, the way the
   starter code prints its `Logs from your program will appear here!` line.
 {{#lang_is_python}}
-- We recommend keeping each tensor as a
+- The starter code's `load_tensors` keeps each tensor as a
   [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
-  of the file's bytes, cast to floats, rather than a list. A later stage loads
-  GPT-2's real weights, 548 MB of them, and a list of Python floats would need
-  about 6 GB:
-
-    ```python
-    values = memoryview(data)[start:end].cast("f")
-    ```
+  of the file's bytes. Keep it that way, rather than turning it into a list. A
+  later stage loads GPT-2's real weights, 548 MB of them, and a list of Python
+  floats would need about 6 GB.
 {{/lang_is_python}}
