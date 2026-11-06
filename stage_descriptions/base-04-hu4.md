@@ -3,23 +3,29 @@ block.
 
 ### Why a block?
 
-GPT-2 stacks 12 of these blocks. Each one runs the attention you built with
-`attn`, then a small network called the MLP (multilayer perceptron), and adds
-each result onto the row rather than replacing it. The MLP works on each row
-alone. It widens the row from 768 numbers to 3072, then brings it back to 768.
+GPT-2 stacks 12 of these blocks. A block does two things to each row. It runs
+the attention you built with `attn`, then the MLP, short for multilayer
+perceptron. Each result is added onto the row instead of replacing it.
 
-Because every block adds onto the row, the row's numbers keep growing. Here is
-how spread out the row for "is" is, as its standard deviation, going into
-several of GPT-2's layers:
+Attention moves information between rows. The MLP then works on each row alone,
+on what that row now holds. It's two multiplies by a weight, with a function
+called GELU between them. The first widens the row from 768 numbers to 3,072,
+and the second brings it back to 768. These two weight tables hold about
+two-thirds of each block's numbers.
+
+Because every block adds onto the row, its numbers keep growing. So each block
+first rescales a copy of the row, a step called layer normalization. It shifts
+and scales the numbers so their average is 0 and their standard deviation is 1,
+then applies a weight and a bias of its own. For example, a row and the same row
+ten times larger come out the same, before the weight and bias:
 
 ```text
-layer     0      3      6      9      11     after 11
-spread    0.18   2.09   2.65   4.59   10.46  15.50
+row          [2, 4, 6, 8]                 [20, 40, 60, 80]
+normalized   [-1.34, -0.45, 0.45, 1.34]   [-1.34, -0.45, 0.45, 1.34]
 ```
 
-So before attention and before the MLP, each block layer-normalizes the row.
-That brings it back to a spread of about 1, however large its numbers have
-grown.
+Attention and the MLP work on that copy, and their results are added onto the
+original row.
 
 ### The `block` command
 
@@ -37,40 +43,33 @@ attention tensors, a block uses eight more. For layer 0 they are:
 | `h.0.mlp.c_proj.weight` | `[4 * n_embd, n_embd]` |
 | `h.0.mlp.c_proj.bias` | `[n_embd]` |
 
-Layer norm and GELU work on one row, or one number, at a time:
+A block runs these steps on the input rows. The two lines under the diagram are
+the additions in steps 3 and 6. Each one adds onto the row from before the layer
+norm, not onto the normalized copy:
 
 ```text
-layer_norm(row, weight, bias):
-    mean = the average of the row's numbers
-    variance = the average of (x - mean)^2 over the row's numbers
-    for each index i:
-        x = (row[i] - mean) / sqrt(variance + 0.00001)
-        out[i] = x * weight[i] + bias[i]
-
-gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
+row ─┬─► ln_1 ─► attention ─► + ─┬─► ln_2 ─► MLP ─► + ─► output
+     │                        ▲  │                  ▲
+     └────────────────────────┘  └──────────────────┘
 ```
 
-Run the block like this:
+1. Layer-normalize a copy of each row with `ln_1.weight` and `ln_1.bias`.
+2. Run attention on those copies, the same way `attn` does.
+3. Add the attention output onto the block's input rows.
+4. Layer-normalize a copy of each row from step 3 with `ln_2.weight` and
+   `ln_2.bias`.
+5. Multiply each copy by `mlp.c_fc.weight`, add `mlp.c_fc.bias`, and apply GELU
+   to every number. The row is now `4 * n_embd` numbers wide.
+6. Multiply by `mlp.c_proj.weight`, add `mlp.c_proj.bias`, and add the result
+   onto the rows from step 3.
+
+Layer norm and GELU are each one formula. In layer norm, the mean and the
+variance are taken over the row's numbers, and the variance is the average of
+`(x - mean)^2`:
 
 ```text
-// 1. layer norm with ln_1
-normed = layer_norm(each row, ln_1.weight, ln_1.bias)
-
-// 2. attention on the normalized rows, as attn does
-attended = attention(normed)
-
-for each position i:
-    // 3. add onto the block's input
-    row[i] = row[i] + attended[i]
-
-    // 4. layer norm with ln_2
-    n = layer_norm(row[i], ln_2.weight, ln_2.bias)
-
-    // 5. widen to 4 * n_embd numbers, then GELU each one
-    wide = gelu(each number of (n × mlp.c_fc.weight + mlp.c_fc.bias))
-
-    // 6. back to n_embd numbers, added onto the row from step 3
-    row[i] = row[i] + (wide × mlp.c_proj.weight + mlp.c_proj.bias)
+layer_norm(x) = (x - mean) / sqrt(variance + 0.00001) * weight + bias
+gelu(x)       = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
 ```
 
 Copy constants like 0.00001 and 0.044715 exactly as written. They're part of
@@ -112,6 +111,41 @@ Print one JSON array of rows:
 ```
 
 ### Hints
+
+<details>
+<summary>What does the whole block look like as pseudocode?</summary>
+
+```text
+layer_norm(row, weight, bias):
+    mean = the average of the row's numbers
+    variance = the average of (x - mean)^2 over the row's numbers
+    for each index i:
+        x = (row[i] - mean) / sqrt(variance + 0.00001)
+        out[i] = x * weight[i] + bias[i]
+
+gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
+
+// 1. layer norm with ln_1
+normed = layer_norm(each row, ln_1.weight, ln_1.bias)
+
+// 2. attention on the normalized rows, as attn does
+attended = attention(normed)
+
+for each position i:
+    // 3. add onto the block's input
+    row[i] = row[i] + attended[i]
+
+    // 4. layer norm with ln_2
+    n = layer_norm(row[i], ln_2.weight, ln_2.bias)
+
+    // 5. widen to 4 * n_embd numbers, then GELU each one
+    wide = gelu(each number of (n × mlp.c_fc.weight + mlp.c_fc.bias))
+
+    // 6. back to n_embd numbers, added onto the row from step 3
+    row[i] = row[i] + (wide × mlp.c_proj.weight + mlp.c_proj.bias)
+```
+
+</details>
 
 <details>
 <summary>Why add the results onto the input instead of replacing it?</summary>

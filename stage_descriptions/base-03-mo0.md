@@ -86,13 +86,6 @@ Whenever this stage or a later one says to multiply by a weight, it means this.
 
 `attn` takes three files and a layer number. In this stage's example:
 
-- `model.safetensors` is a safetensors file, like the one `inspect` reads. It
-  holds four weight tables for each layer. Their names start with `h.` and the
-  layer number, so for layer 0 they are:
-    - `h.0.attn.c_attn.weight`, with shape `[n_embd, 3 * n_embd]`
-    - `h.0.attn.c_attn.bias`, with shape `[3 * n_embd]`
-    - `h.0.attn.c_proj.weight`, with shape `[n_embd, n_embd]`
-    - `h.0.attn.c_proj.bias`, with shape `[n_embd]`
 - `config.json` is a JSON object of sizes, using the same names as
   [GPT-2's config](https://huggingface.co/gpt2/blob/main/config.json):
 
@@ -100,37 +93,29 @@ Whenever this stage or a later one says to multiply by a weight, it means this.
     { "n_embd": 1, "n_head": 1, "n_layer": 1, "n_positions": 4, "vocab_size": 2 }
     ```
 
+- `model.safetensors` is a safetensors file, like the one `inspect` reads. It
+  holds four weight tables for each layer. Their names start with `h.` and the
+  layer number, so for layer 0 they are:
+    - `h.0.attn.c_attn.weight`, with shape `[n_embd, 3 * n_embd]`
+    - `h.0.attn.c_attn.bias`, with shape `[3 * n_embd]`
+    - `h.0.attn.c_proj.weight`, with shape `[n_embd, n_embd]`
+    - `h.0.attn.c_proj.bias`, with shape `[n_embd]`
 - The layer number is the layer to run: `0`. `model.safetensors` holds the
   weights for every layer, and `attn` runs only one of them.
 - `input.json` is a JSON array of the rows to mix, one row per position:
   `[[1], [2]]`.
 
-`attn` turns each input row into an output row of the same length, mixed from
-itself and the rows before it as described above. Print the output rows as a
-JSON array. Compute them like this:
+`attn` turns each input row into an output row of the same length. With one
+head, compute each position's output row like this:
 
-```text
-size = n_embd / n_head                    // the head size
-
-for each position i:
-    // 1. query, key, and value: n_embd numbers in, 3 * n_embd out
-    q[i], k[i], v[i] = thirds of (row[i] × c_attn.weight + c_attn.bias)
-
-// head h uses numbers h * size through (h + 1) * size - 1 of q, k, and v
-for each head h:
-    for each position i:
-        for each position j from 0 to i:  // itself and earlier positions only
-            // 2. how well j's key answers i's query
-            score[j] = dot(q[i] in head h, k[j] in head h) / sqrt(size)
-        // 3. scores to weights that add up to 1
-        weight = softmax(score[0], ..., score[i])
-        // 4. the weighted average of the values
-        out[i] in head h = sum over j of weight[j] * (v[j] in head h)
-
-for each position i:
-    // 5. mix the heads back together
-    result[i] = out[i] × c_proj.weight + c_proj.bias
-```
+1. Multiply the position's row by `c_attn.weight` and add `c_attn.bias`. Split
+   the result into three equal parts: the query, the key, and the value.
+2. Score the position against itself and every earlier position. A score is the
+   dot product of this position's query with the other position's key, divided
+   by the square root of the head size, `n_embd / n_head`.
+3. Softmax the scores into weights.
+4. Add up the scored positions' values, each multiplied by its weight.
+5. Multiply that sum by `c_proj.weight` and add `c_proj.bias`.
 
 ### Example
 
@@ -164,7 +149,59 @@ Print one JSON array of rows:
 [[1.0], [1.8807970779778822]]
 ```
 
+### More than one head
+
+With `n_head` heads, split the query, the key, and the value into `n_head` equal
+slices. Run steps 2 to 4 on each slice separately, then put the results side by
+side, in order, before step 5.
+
+For example, with `n_embd` 2 and 2 heads, each head gets one number. Take the
+input `[[1, 0], [0, 1]]`, with weights that copy each row into its query, key,
+and value. Here is position 1, whose query is `[0, 1]`:
+
+```text
+head 0, number 0    scores  0*1 = 0,  0*0 = 0    weights  [0.5, 0.5]
+                    value   0.5 * 1 + 0.5 * 0 = 0.5
+head 1, number 1    scores  1*0 = 0,  1*1 = 1    weights  [0.269, 0.731]
+                    value   0.269 * 0 + 0.731 * 1 = 0.731
+side by side        [0.5, 0.731]
+```
+
+With one head of size 2 instead, the same rows give `[0.330, 0.670]`, because
+the softmax then runs once over the whole row.
+
 ### Hints
+
+<details>
+<summary>What does the whole algorithm look like as pseudocode?</summary>
+
+```text
+// input[i] is the row at position i of input.json, counting from 0
+
+size = n_embd / n_head                // numbers per head
+
+for each position i:
+    // 1. query, key, and value, n_embd numbers each
+    qkv = input[i] × c_attn.weight + c_attn.bias
+    q[i] = qkv[0 : n_embd]
+    k[i] = qkv[n_embd : 2 * n_embd]
+    v[i] = qkv[2 * n_embd : 3 * n_embd]
+
+for each position i:
+    for each head h:
+        a, b = h * size, (h + 1) * size   // this head's slice
+        for each position j from 0 to i:  // itself and earlier only
+            // 2. how well j's key answers i's query
+            score[j] = dot(q[i][a : b], k[j][a : b]) / sqrt(size)
+        // 3. scores to weights that add up to 1
+        weight = softmax(score[0], ..., score[i])
+        // 4. the weighted average of the values
+        out[i][a : b] = sum over j of weight[j] * v[j][a : b]
+    // 5. mix the heads back together
+    result[i] = out[i] × c_proj.weight + c_proj.bias
+```
+
+</details>
 
 <details>
 <summary>Why divide the scores by the square root of the head size?</summary>
