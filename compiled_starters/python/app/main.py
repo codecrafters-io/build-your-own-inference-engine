@@ -1,3 +1,5 @@
+import json
+import struct
 import sys
 
 
@@ -6,9 +8,6 @@ def main():
     print("Logs from your program will appear here!", file=sys.stderr)
 
     # TODO: Uncomment the code below to pass the first stage
-    #
-    # import json
-    # import struct
     #
     # command = sys.argv[1]
     # if command == "inspect":

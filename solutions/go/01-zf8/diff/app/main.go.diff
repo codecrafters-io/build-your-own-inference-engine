@@ -2,19 +2,19 @@
  package main
 
  import (
--	// TODO: Uncomment the code below to pass the first stage!
+-	// TODO: Uncomment the imports below to pass the first stage!
 -	// "encoding/binary"
 -	// "encoding/json"
--	// "io"
--	// "math"
--	// "sort"
 +	"encoding/binary"
 +	"encoding/json"
+ 	"fmt"
+-	// "io"
+-	// "math"
 +	"io"
 +	"math"
-+	"sort"
- 	"fmt"
  	"os"
+-	// "sort"
++	"sort"
  )
 
  // Usage: your_program.sh <command> <arg1> <arg2> ...
@@ -120,7 +120,7 @@
 +			os.Exit(1)
 +		}
 +		defer f.Close()
-+
+
 +		var headerLen uint64
 +		if err := binary.Read(f, binary.LittleEndian, &headerLen); err != nil {
 +			fmt.Fprintf(os.Stderr, "Error reading header length: %s\n", err)
@@ -197,7 +197,7 @@
 +			os.Exit(1)
 +		}
 +		fmt.Println(string(encoded))
-
++
  	default:
  		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
  		os.Exit(1)

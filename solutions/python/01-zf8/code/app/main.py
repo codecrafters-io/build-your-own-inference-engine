@@ -1,10 +1,9 @@
+import json
+import struct
 import sys
 
 
 def main():
-    import json
-    import struct
-
     command = sys.argv[1]
     if command == "inspect":
         with open(sys.argv[2], "rb") as f:

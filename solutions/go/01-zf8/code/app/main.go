@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
-	"sort"
-	"fmt"
 	"os"
+	"sort"
 )
 
 // Usage: your_program.sh <command> <arg1> <arg2> ...

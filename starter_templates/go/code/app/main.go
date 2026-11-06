@@ -1,14 +1,14 @@
 package main
 
 import (
-	// TODO: Uncomment the code below to pass the first stage!
+	// TODO: Uncomment the imports below to pass the first stage!
 	// "encoding/binary"
 	// "encoding/json"
+	"fmt"
 	// "io"
 	// "math"
-	// "sort"
-	"fmt"
 	"os"
+	// "sort"
 )
 
 // Usage: your_program.sh <command> <arg1> <arg2> ...
