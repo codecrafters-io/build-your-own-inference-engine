@@ -29,9 +29,9 @@ server gives your program about 2.5 GB.
 
 {{#lang_is_python}}
 A Python `float` takes 24 bytes, so a list of GPT-2's numbers needs about 6 GB,
-more than the test server allows.
-A [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast) reads the same
-bytes as floats, with no copy:
+more than the test server allows. A
+[`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
+reads the same bytes as floats, with no copy:
 
 ```python
 values = memoryview(data)[start:end].cast("f")

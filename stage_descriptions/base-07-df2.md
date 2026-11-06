@@ -3,11 +3,25 @@ one random number from stdin per token.
 
 ### Why sample?
 
-Greedy decoding always appends the same token. Sampling picks a token at random,
-weighted by its score, and temperature and top-p shape those weights.
-Temperature divides the scores before the softmax, so a temperature below 1
-makes the highest score even larger relative to the others. Top-p then throws
-away the least likely tokens.
+Greedy decoding always appends the same token, so a prompt can only ever
+continue one way. Sampling picks a token at random, weighted by its probability,
+so the same prompt can continue differently on each run.
+
+Temperature divides the logits before the softmax. A temperature below 1 makes
+the likely tokens even more likely. Here are GPT-2's probabilities for the
+first token after "The capital of France is":
+
+| Token | Temperature 1 | Temperature 0.7 |
+| --- | --- | --- |
+| " the" | 0.085 | 0.227 |
+| " now" | 0.048 | 0.101 |
+| " a" | 0.046 | 0.096 |
+| " France" | 0.032 | 0.058 |
+| " Paris" | 0.032 | 0.057 |
+
+Top-p then throws away the least likely tokens. It keeps the most likely ones
+until their probabilities add up to `top_p`. With a `top_p` of 0.9, that's
+1,503 tokens at temperature 1, and 62 at temperature 0.7.
 
 ### Sampling one token
 
@@ -21,19 +35,20 @@ When `tokens.json` has no `temperature`, keep taking the highest score as
 before. The tester still runs those files, with nothing on stdin.
 
 Stdin has one number per new token, each between 0 and 1. Read them as text, one
-per line.
+per line. Pick each new token like this:
 
-For each new token:
+```text
+p = softmax(each logit / temperature)
+order = the token ids sorted by p, highest first, the lower id first on a tie
+kept = the shortest start of order whose p adds up to at least top_p
+divide each kept p by the sum of the kept p, so they add up to 1 again
 
-1. Divide every logit by `temperature`.
-2. Softmax, so the values are probabilities and add up to 1.
-3. Sort the tokens by probability, highest first. Equal probabilities keep the
-   lower token id.
-4. Keep the shortest prefix of that list whose probabilities add up to at least
-   `top_p`.
-5. Divide those kept probabilities by their sum, so they add up to 1 again.
-6. Walk the list, adding as you go. Choose the first token whose running total
-   is greater than the random number for this step.
+r = the next number from stdin
+total = 0
+for each id in kept, in order:
+    total = total + p[id]
+    if total > r: pick id, and stop
+```
 
 In this example the two tokens have the same score, so the probabilities are 0.5
 and 0.5. The sorted order is token 0, then token 1. The running totals are 0.5
@@ -65,7 +80,4 @@ same random number.
 
 ### Notes
 
-- Read `count` numbers from stdin, in order, one per new token.
-- Equal probabilities stay in token-id order. The lower id comes first.
-- `top_p` of 1 keeps every token that has a probability above 0. The running
-  total uses the renormalized probabilities.
+- `top_p` of 1 keeps every token that has a probability above 0.

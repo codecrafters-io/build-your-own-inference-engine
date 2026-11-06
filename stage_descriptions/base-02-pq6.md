@@ -4,19 +4,18 @@ position embeddings.
 ### Why embed?
 
 GPT-2 doesn't read words. It reads token ids, integers that each stand for a
-word or a piece of one. For example, "The" is token 464. An id is only a label:
-464 isn't "more" than 286 in any useful way. So GPT-2 looks up a row of 768
-numbers for each id, and later stages do their arithmetic on those rows. The row
-for a token is called its embedding.
+word or a part of a word. GPT-2's vocabulary is a fixed list of 50,257 tokens,
+and a token's id is its place in that list. For example, "The" is token 464.
+GPT-2 keeps a table with one row for each token, and each row is 768 numbers.
+For "The", it reads row 464 of that table. Every later stage works on rows like
+this one, never on the ids. A token's row is called its embedding.
 
-Numbers like 768 are GPT-2's sizes. You don't need to know why they have those
-values. Your program reads every size it needs from the files the tester gives
-it.
+### The `embed` command
 
-GPT-2 stores two tables for this. `wte.weight` is the token embedding table,
-with one row per token id. `wpe.weight` is the position embedding table, with
-one row per position in the prompt. For each token, this stage adds its row from
-`wte.weight` to the row for its position from `wpe.weight`.
+In `model.safetensors`, that table is the weight table `wte.weight`. A second
+weight table, `wpe.weight`, has one row for each position in the prompt. For
+each token, this stage adds its row from `wte.weight` to the row for its
+position from `wpe.weight`.
 
 For example, take the prompt "The capital of", whose ids are `[464, 3139, 286]`:
 
@@ -31,19 +30,23 @@ it is, and the position row says where it sits. If "The" appeared again at
 position 5, it would use the same row 464 from `wte.weight` but row 5 from
 `wpe.weight`, so its embedding would be different.
 
-### The `embed` command
+`embed` reads two files. In this example:
 
-`ids.json` is a JSON array of token ids, like `[1, 0]`. For each id at position
-`i`, starting at 0, add row `id` of `wte.weight` to row `i` of `wpe.weight`.
-Both tables are `F32`.
+- `ids.json` holds the token ids, `[1, 0]`.
+- `model.safetensors` holds the two weight tables:
+    - `wte.weight`, with one row for each token id, `[[1, 2], [3, 4]]`.
+    - `wpe.weight`, with one row for each position, `[[10, 20], [30, 40]]`.
 
-In this example, `wte.weight` is `[[1, 2], [3, 4]]` and `wpe.weight` is
-`[[10, 20], [30, 40]]`. The ids are `[1, 0]`.
+For each id in `ids.json`, take row `id` of `wte.weight` and row `i` of
+`wpe.weight`, where `i` is the id's position, starting at 0. Add the two rows,
+number by number:
 
-Position 0 is token 1, so `[3, 4] + [10, 20]` is `[13, 24]`. Position 1 is token
-0, so `[1, 2] + [30, 40]` is `[31, 42]`.
+| Position | Token | Row from `wte.weight` | Row from `wpe.weight` | Embedding |
+| --- | --- | --- | --- | --- |
+| 0 | 1 | `[3, 4]` | `[10, 20]` | `[13, 24]` |
+| 1 | 0 | `[1, 2]` | `[30, 40]` | `[31, 42]` |
 
-Print a JSON array with one row per token:
+Print the embeddings as a JSON array:
 
 ```json
 [
@@ -70,15 +73,12 @@ Your program must print:
 ]
 ```
 
-The tester allows a difference of 0.00001 on each number. It will also run the
-same token at two positions, and a sequence whose ids are not in order.
+The tester will also run the same token at two positions, and a sequence whose
+ids are not in order.
 
+{{#lang_is_python}}
 ### Notes
 
-- Position 0 is the first id. There is no separate list of positions.
-- The two rows you add have the same length. Print one JSON array to stdout, and
-  send debug output to stderr.
-{{#lang_is_python}}
 - We recommend keeping each tensor as a
   [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
   of the file's bytes, cast to floats, rather than a list. A later stage loads

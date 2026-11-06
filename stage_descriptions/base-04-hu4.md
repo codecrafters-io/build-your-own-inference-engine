@@ -3,59 +3,75 @@ block.
 
 ### Why a block?
 
-GPT-2 stacks 12 of these blocks. Each one normalizes its input, runs the
-attention you built with `attn`, and adds that result back onto the input. It
-normalizes again, runs a small network called the MLP (multilayer perceptron),
-and adds that back too. The MLP widens a row of 768 numbers to 3072 and then
-back to 768. `h.0.mlp.c_fc.weight` has shape `[768, 3072]` in the real file.
+GPT-2 stacks 12 of these blocks. Each one runs the attention you built with
+`attn`, then a small network called the MLP (multilayer perceptron), and adds
+each result onto the row rather than replacing it. The MLP works on each row
+alone. It widens the row from 768 numbers to 3072, then brings it back to 768.
+
+Because every block adds onto the row, the row's numbers keep growing. Here is
+how spread out the row for "is" is, as its standard deviation, going into
+several of GPT-2's layers:
+
+```text
+layer     0      3      6      9      11     after 11
+spread    0.18   2.09   2.65   4.59   10.46  15.50
+```
+
+So before attention and before the MLP, each block layer-normalizes the row.
+That brings it back to a spread of about 1, however large its numbers have
+grown.
 
 ### The `block` command
 
-The tester writes the same four files as for `attn`: `model.safetensors`,
-`config.json`, `layer.json`, and `input.json`. This example's `config.json` is:
+`block` takes the same three files and layer number as `attn`. Besides the four
+attention tensors, a block uses eight more. For layer 0 they are:
 
-```json
-{ "n_embd": 2, "n_head": 1, "n_layer": 2, "n_positions": 4, "vocab_size": 2 }
+| Tensor | Shape |
+| --- | --- |
+| `h.0.ln_1.weight` | `[n_embd]` |
+| `h.0.ln_1.bias` | `[n_embd]` |
+| `h.0.ln_2.weight` | `[n_embd]` |
+| `h.0.ln_2.bias` | `[n_embd]` |
+| `h.0.mlp.c_fc.weight` | `[n_embd, 4 * n_embd]` |
+| `h.0.mlp.c_fc.bias` | `[4 * n_embd]` |
+| `h.0.mlp.c_proj.weight` | `[4 * n_embd, n_embd]` |
+| `h.0.mlp.c_proj.bias` | `[n_embd]` |
+
+Layer norm and GELU work on one row, or one number, at a time:
+
+```text
+layer_norm(row, weight, bias):
+    mean = the average of the row's numbers
+    variance = the average of (x - mean)^2 over the row's numbers
+    for each index i:
+        x = (row[i] - mean) / sqrt(variance + 0.00001)
+        out[i] = x * weight[i] + bias[i]
+
+gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
 ```
 
-`layer.json` is `0`, and `input.json` is `[[1, 2]]`.
+Run the block like this:
 
-Besides the four attention tensors `attn` reads, a block uses eight more. For
-layer 0 they are:
+```text
+// 1. layer norm with ln_1
+normed = layer_norm(each row, ln_1.weight, ln_1.bias)
 
-| Tensor | Shape | Used in |
-| --- | --- | --- |
-| `h.0.ln_1.weight` | `[n_embd]` | step 1, multiplied |
-| `h.0.ln_1.bias` | `[n_embd]` | step 1, added |
-| `h.0.ln_2.weight` | `[n_embd]` | step 4, multiplied |
-| `h.0.ln_2.bias` | `[n_embd]` | step 4, added |
-| `h.0.mlp.c_fc.weight` | `[n_embd, 4 * n_embd]` | step 5, multiplied |
-| `h.0.mlp.c_fc.bias` | `[4 * n_embd]` | step 5, added |
-| `h.0.mlp.c_proj.weight` | `[4 * n_embd, n_embd]` | step 6, multiplied |
-| `h.0.mlp.c_proj.bias` | `[n_embd]` | step 6, added |
+// 2. attention on the normalized rows, as attn does
+attended = attention(normed)
 
-Run these steps on the input rows:
+for each position i:
+    // 3. add onto the block's input
+    row[i] = row[i] + attended[i]
 
-1. Layer-normalize each row with `ln_1`. Find the row's mean, and its variance,
-   the average of the squared distances from the mean. Subtract the mean from
-   every number, then divide by the square root of the variance plus 0.00001.
-   Multiply number by number with `ln_1.weight`, and add `ln_1.bias`. This keeps
-   every row at a steady size, however large its numbers have grown.
-2. Run attention on the normalized rows, the same way `attn` does.
-3. Add the attention output onto the block's input rows, number by number.
-   Adding, rather than replacing, lets each row keep what it had and take on
-   what attention found.
-4. Layer-normalize the rows from step 3 with `ln_2`, using the same rule.
-5. Multiply each row by `mlp.c_fc.weight` and add `mlp.c_fc.bias`, which widens
-   it to `4 * n_embd` numbers. Then apply GELU to every number:
-   `0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))`. GELU keeps
-   positive numbers close to themselves and pushes negative ones toward 0.
-   Without it, steps 5 and 6 would collapse into one multiply and one add.
-6. Multiply by `mlp.c_proj.weight` and add `mlp.c_proj.bias`, which brings the
-   row back to `n_embd` numbers. Add the result onto the rows from step 3.
+    // 4. layer norm with ln_2
+    n = layer_norm(row[i], ln_2.weight, ln_2.bias)
 
-Attention moves information between rows. The MLP in steps 5 and 6 then works on
-each row alone, on what that row now holds.
+    // 5. widen to 4 * n_embd numbers, then GELU each one
+    wide = gelu(each number of (n × mlp.c_fc.weight + mlp.c_fc.bias))
+
+    // 6. back to n_embd numbers, added onto the row from step 3
+    row[i] = row[i] + (wide × mlp.c_proj.weight + mlp.c_proj.bias)
+```
 
 Copy constants like 0.00001 and 0.044715 exactly as written. They're part of
 GPT-2's definition, so there's nothing to work out about them, and a different
@@ -64,36 +80,71 @@ value changes the output.
 ### Example
 
 In this example's file, both layer norms have weight `[1, 1]` and bias `[0, 0]`,
-and every attention and MLP tensor is all zeros. Here is the row after each
-step:
+and every attention and MLP tensor is all zeros. The input is `[[1, 2]]`:
 
-| After step | Row |
-| --- | --- |
-| Input | `[1, 2]` |
-| 1. `ln_1` | about `[-1, 1]` |
-| 2. Attention | `[0, 0]` |
-| 3. Add onto the input | `[1, 2]` |
-| 4. `ln_2` | about `[-1, 1]` |
-| 5. `c_fc` and GELU | eight zeros |
-| 6. `c_proj`, added onto step 3 | `[1, 2]` |
+```text
+// 1. layer norm with ln_1
+mean          (1 + 2) / 2 = 1.5
+variance      (0.5^2 + 0.5^2) / 2 = 0.25
+normalized    [-0.5, 0.5] / sqrt(0.25 + 0.00001) = about [-1, 1]
+weight, bias  [-1, 1] * [1, 1] + [0, 0] = [-1, 1]
 
-In step 1, the mean of `[1, 2]` is 1.5, and both numbers are 0.5 away from it,
-so the variance is 0.25. The square root of 0.25001 is just over 0.5, so the
-row becomes about `[-0.5 / 0.5, 0.5 / 0.5]`, which is `[-1, 1]`.
+// 2. attention, with every tensor zero
+attention     [0, 0]
 
-Attention and the MLP both output zeros here, so the two additions add nothing,
-and the output is the input:
+// 3. add onto the block's input
+row           [1, 2] + [0, 0] = [1, 2]
+
+// 4. layer norm with ln_2, the same rule
+normalized    about [-1, 1]
+
+// 5. × c_fc.weight + c_fc.bias, then GELU
+wide row      [0, 0, 0, 0, 0, 0, 0, 0]       // 4 * n_embd numbers
+
+// 6. × c_proj.weight + c_proj.bias, added onto the row from step 3
+output        [1, 2] + [0, 0] = [1, 2]
+```
+
+Print one JSON array of rows:
 
 ```json
 [[1.0, 2.0]]
 ```
 
+### Hints
+
+<details>
+<summary>Why add the results onto the input instead of replacing it?</summary>
+
+Adding lets each row keep what it had and take on what attention or the MLP
+found. Each of GPT-2's 12 blocks adds a little to the row, rather than rewriting
+it.
+
+</details>
+
+<details>
+<summary>What does GELU do?</summary>
+
+GELU keeps positive numbers close to themselves and pushes negative ones toward
+0. Without it, steps 5 and 6 would each be a multiply and an add, and two of
+those in a row work out to a single multiply and add. The wider middle would
+add nothing.
+
+</details>
+
 ### Tests
 
-The tester will write the four files and execute your program like this:
+The tester will write the same three files as for `attn`. For this example,
+the layer is `0`, `input.json` is `[[1, 2]]`, and `config.json` is:
+
+```json
+{ "n_embd": 2, "n_head": 1, "n_layer": 2, "n_positions": 4, "vocab_size": 2 }
+```
+
+It will then execute your program like this:
 
 ```bash
-$ ./your_program.sh block model.safetensors config.json layer.json input.json
+$ ./your_program.sh block model.safetensors config.json 0 input.json
 ```
 
 Your program must print:

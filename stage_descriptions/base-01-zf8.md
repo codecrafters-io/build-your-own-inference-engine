@@ -72,7 +72,5 @@ tensors at different offsets, and a file with an `I32` tensor.
 
 ### Notes
 
-- Skip `__metadata__`. It describes the file, and it is not a tensor.
-- Sort by name. The tester writes the tensors in the order it chooses, which may
-  not be alphabetical. The first file's header is 90 bytes, which is not a
-  multiple of 8. Use the length you read.
+- The first file's header is 90 bytes, which is not a multiple of 8. Use the
+  length you read.
