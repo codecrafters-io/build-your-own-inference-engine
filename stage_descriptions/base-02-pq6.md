@@ -76,9 +76,11 @@ Your program must print:
 The tester will also run the same token at two positions, and a sequence whose
 ids are not in order.
 
-{{#lang_is_python}}
 ### Notes
 
+- Print only the JSON to stdout. Send debug output to stderr, the way the
+  starter code prints its `Logs from your program will appear here!` line.
+{{#lang_is_python}}
 - We recommend keeping each tensor as a
   [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
   of the file's bytes, cast to floats, rather than a list. A later stage loads
