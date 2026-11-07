@@ -1,46 +1,6 @@
-@@ -1,93 +1,89 @@
- use std::collections::HashMap;
- #[allow(unused_imports)]
- use std::env;
- use std::fs;
- use std::process;
-
- /// One table of numbers from a safetensors file.
- #[allow(dead_code)]
- struct Tensor {
-     dtype: String,
-     shape: Vec<u64>,
-     values: Vec<f32>,
- }
-
- /// Reads every tensor in a safetensors file, with all of its numbers.
- #[allow(dead_code)]
- fn load_tensors(path: &str) -> HashMap<String, Tensor> {
-     let file = fs::read(path).unwrap();
-     let header_len = u64::from_le_bytes(file[0..8].try_into().unwrap()) as usize;
-     let header: serde_json::Map<String, serde_json::Value> =
-         serde_json::from_slice(&file[8..8 + header_len]).unwrap();
-     let data = &file[8 + header_len..];
-
-     let mut tensors = HashMap::new();
-     for (name, info) in &header {
-         if name == "__metadata__" {
-             continue;
-         }
-         let dtype = info["dtype"].as_str().unwrap().to_string();
-         let shape: Vec<u64> = info["shape"]
-             .as_array()
-             .unwrap()
-             .iter()
-             .map(|dim| dim.as_u64().unwrap())
-             .collect();
-         let offsets = info["data_offsets"].as_array().unwrap();
-         let start = offsets[0].as_u64().unwrap() as usize;
-         let end = offsets[1].as_u64().unwrap() as usize;
-         let values: Vec<f32> = data[start..end]
-             .chunks_exact(4)
+@@ -43,53 +43,49 @@
              .map(|chunk| {
-                 let bits = u32::from_le_bytes(chunk.try_into().unwrap());
+                 let bits = u32::from_le_bytes(*chunk);
                  match dtype.as_str() {
                      "F32" => f32::from_bits(bits),
                      "I32" => bits as i32 as f32,

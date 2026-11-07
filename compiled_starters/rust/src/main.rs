@@ -37,9 +37,11 @@ fn load_tensors(path: &str) -> HashMap<String, Tensor> {
         let start = offsets[0].as_u64().unwrap() as usize;
         let end = offsets[1].as_u64().unwrap() as usize;
         let values: Vec<f32> = data[start..end]
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .map(|chunk| {
-                let bits = u32::from_le_bytes(chunk.try_into().unwrap());
+                let bits = u32::from_le_bytes(*chunk);
                 match dtype.as_str() {
                     "F32" => f32::from_bits(bits),
                     "I32" => bits as i32 as f32,

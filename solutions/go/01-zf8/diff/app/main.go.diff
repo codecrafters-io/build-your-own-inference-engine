@@ -1,4 +1,4 @@
-@@ -1,122 +1,116 @@
+@@ -1,36 +1,35 @@
  package main
 
  import (
@@ -36,19 +36,7 @@
  	if _, err := io.ReadFull(f, headerBytes); err != nil {
  		return nil, err
  	}
- 	var header map[string]struct {
- 		DType       string `json:"dtype"`
- 		Shape       []int  `json:"shape"`
- 		DataOffsets [2]int `json:"data_offsets"`
- 	}
- 	if err := json.Unmarshal(headerBytes, &header); err != nil {
- 		return nil, err
- 	}
- 	data, err := io.ReadAll(f)
- 	if err != nil {
- 		return nil, err
- 	}
-
+@@ -50,73 +49,68 @@
  	tensors := make(map[string]tensor)
  	for name, info := range header {
  		if name == "__metadata__" {
@@ -121,7 +109,7 @@
 +			fmt.Fprintf(os.Stderr, "Error reading tensors: %s\n", err)
 +			os.Exit(1)
 +		}
-
++
 +		names := make([]string, 0, len(tensors))
 +		for name := range tensors {
 +			names = append(names, name)
@@ -146,7 +134,7 @@
 +			os.Exit(1)
 +		}
 +		fmt.Println(string(encoded))
-+
+
  	default:
  		fmt.Fprintf(os.Stderr, "Unknown command %s\n", command)
  		os.Exit(1)

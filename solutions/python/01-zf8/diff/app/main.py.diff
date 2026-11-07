@@ -1,8 +1,4 @@
-@@ -1,56 +1,51 @@
- import json
- import struct
- import sys
-
+@@ -5,52 +5,47 @@
 
  def load_tensors(path):
      """Reads every tensor in a safetensors file, with all of its numbers."""
@@ -30,25 +26,7 @@
  def main():
 -    # You can use print statements as follows for debugging, they'll be visible when running tests.
 -    print("Logs from your program will appear here!", file=sys.stderr)
-+    command = sys.argv[1]
-+    if command == "inspect":
-+        tensors = load_tensors(sys.argv[2])
-+        summaries = []
-+        for name in sorted(tensors):
-+            tensor = tensors[name]
-+            summaries.append(
-+                {
-+                    "name": name,
-+                    "dtype": tensor["dtype"],
-+                    "shape": tensor["shape"],
-+                    "first": list(tensor["values"][:4]),
-+                }
-+            )
-+        print(json.dumps(summaries))
-+    else:
-+        print(f"Unknown command {command}", file=sys.stderr)
-+        raise SystemExit(1)
-
+-
 -    # TODO: Uncomment the code below to pass the first stage
 -    #
 -    # command = sys.argv[1]
@@ -69,7 +47,25 @@
 -    # else:
 -    #     print(f"Unknown command {command}", file=sys.stderr)
 -    #     raise SystemExit(1)
++    command = sys.argv[1]
++    if command == "inspect":
++        tensors = load_tensors(sys.argv[2])
++        summaries = []
++        for name in sorted(tensors):
++            tensor = tensors[name]
++            summaries.append(
++                {
++                    "name": name,
++                    "dtype": tensor["dtype"],
++                    "shape": tensor["shape"],
++                    "first": list(tensor["values"][:4]),
++                }
++            )
++        print(json.dumps(summaries))
++    else:
++        print(f"Unknown command {command}", file=sys.stderr)
++        raise SystemExit(1)
 
--
+
  if __name__ == "__main__":
      main()
