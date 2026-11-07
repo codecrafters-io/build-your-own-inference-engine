@@ -7,8 +7,8 @@ GPT-2 doesn't read words. It reads token ids, integers that each stand for a
 word or a part of a word. GPT-2's vocabulary is a fixed list of 50,257 tokens,
 and a token's id is its place in that list. For example, "The" is token 464.
 GPT-2 keeps a table with one row for each token, and each row is 768 numbers.
-For "The", it reads row 464 of that table. Every later stage works on rows like
-this one, never on the ids. A token's row is called its embedding.
+For "The", it reads row 464 of that table. Later stages work on rows like this
+one, never on the ids.
 
 ### The `embed` command
 
@@ -86,7 +86,7 @@ ids are not in order.
 {{#lang_is_python}}
 - The starter code's `load_tensors` keeps each tensor as a
   [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
-  of the file's bytes. Keep it that way, rather than turning it into a list. A
-  later stage loads GPT-2's real weights, 548 MB of them, and a list of Python
-  floats would need about 6 GB.
+  of the file's bytes. Keep it that way, rather than turning it into a list.
+  GPT-2's real weights are 548 MB, and as a list of Python floats they would
+  need about 6 GB.
 {{/lang_is_python}}
