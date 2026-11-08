@@ -36,7 +36,8 @@ Attention turns every row into three lists of numbers:
   might pass on "a country in Europe."
 
 A score is how well one row's key answers another row's query. It's the dot
-product of the two, so a bigger score means a better match. The key for
+product of the two: multiply them number by number and add up the results. A
+bigger score means a better match. The key for
 "France" answers the query for "is" well, so that pair gets a high score.
 
 Softmax turns a row's scores into weights that add up to 1. It raises `e`, about
@@ -67,9 +68,8 @@ me?", and puts almost all of each word's weight on that word:
 
 ### Multiplying by a weight
 
-The steps below use two operations on lists of numbers. The dot product of two
-lists of the same length multiplies them pair by pair and adds up the results.
-Multiplying a row by a matrix is a loop of dot products. If the row has `n`
+The steps below also multiply a row by a matrix, which is a loop of dot
+products. If the row has `n`
 numbers and the matrix has shape `[n, m]`, the result has `m` numbers, and
 number `j` is the dot product of the row with column `j` of the matrix:
 
@@ -117,7 +117,7 @@ head, compute each position's output row like this:
 4. Add up the scored positions' values, each multiplied by its weight.
 5. Multiply that sum by `c_proj.weight` and add `c_proj.bias`.
 
-### Example
+### One head, step by step
 
 This example has one head of size 1, and the input is `[[1], [2]]`. Each step's
 result is shown under its number:

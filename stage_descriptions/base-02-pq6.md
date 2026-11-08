@@ -1,14 +1,12 @@
-In this stage, you'll implement the `embed` command to add token embeddings and
-position embeddings.
+In this stage, you'll implement the `embed` command to turn each token id into a
+row of numbers.
 
 ### Why embed?
 
-GPT-2 doesn't read words. It reads token ids, integers that each stand for a
-word or a part of a word. GPT-2's vocabulary is a fixed list of 50,257 tokens,
-and a token's id is its place in that list. For example, "The" is token 464.
-GPT-2 keeps a table with one row for each token, and each row is 768 numbers.
-For "The", it reads row 464 of that table. Later stages work on rows like this
-one, never on the ids.
+GPT-2's vocabulary is a fixed list of 50,257 tokens, and a token's id is its
+place in that list. For example, "The" is token 464. GPT-2 keeps a table with
+one row for each token, and each row is 768 numbers. For "The", it reads row 464
+of that table. Later stages work on rows like this one, never on the ids.
 
 ### The `embed` command
 

@@ -85,7 +85,7 @@ stages:
     name: "Embed tokens"
     difficulty: easy
     marketing_md: |-
-      In this stage, you'll implement the `embed` command to add token embeddings and position embeddings.
+      In this stage, you'll implement the `embed` command to turn each token id into a row of numbers.
   - slug: "mo0"
     name: "Causal attention"
     difficulty: medium
@@ -100,7 +100,7 @@ stages:
     name: "Logits"
     difficulty: medium
     marketing_md: |-
-      In this stage, you'll implement the `logits` command to run every layer and print the logits for the last position.
+      In this stage, you'll implement the `logits` command to score every token as the next one.
   - slug: "hh8"
     name: "Greedy decode"
     difficulty: medium
@@ -110,7 +110,7 @@ stages:
     name: "Sample a token"
     difficulty: medium
     marketing_md: |-
-      In this stage, you'll add temperature and top-p sampling to `generate`, using one random number from stdin per token.
+      In this stage, you'll add sampling to `generate`, to pick each new token at random, weighted by its probability.
   - slug: "rq5"
     name: "KV cache"
     difficulty: hard
