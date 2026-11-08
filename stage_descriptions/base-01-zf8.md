@@ -43,8 +43,9 @@ because it makes the weights readable, and checkable.
 ### Why start with inspect?
 
 The model file is a set of named tables of numbers. The tables are called
-tensors. They hold numbers arranged in different ways, for example 4 numbers in
-a single list, or 6 numbers in 2 rows of 3.
+[tensors](https://app.codecrafters.io/concepts/tensors). They hold numbers
+arranged in different ways, for example 4 numbers in a single list, or 6
+numbers in 2 rows of 3.
 
 To generate text, your engine does arithmetic with these numbers, so it has to
 read them correctly first. `inspect` prints every tensor's name, data type,

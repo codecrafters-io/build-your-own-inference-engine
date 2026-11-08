@@ -35,8 +35,9 @@ position 5, it would use the same row 464 from `wte.weight` but row 5 from
     - `wte.weight`, with one row for each token id, `[[1, 2], [3, 4]]`.
     - `wpe.weight`, with one row for each position, `[[10, 20], [30, 40]]`.
 
-A tensor stores its rows one after another. `wte.weight` holds `1, 2, 3, 4` with
-shape `[2, 2]`, so row 0 is `[1, 2]` and row 1 is `[3, 4]`.
+A [tensor](https://app.codecrafters.io/concepts/tensors) stores its rows one
+after another. `wte.weight` holds `1, 2, 3, 4` with shape `[2, 2]`, so row 0 is
+`[1, 2]` and row 1 is `[3, 4]`.
 
 For each id in `ids.json`, take row `id` of `wte.weight` and row `i` of
 `wpe.weight`, where `i` is the id's position, starting at 0. Add the two rows,

@@ -14,6 +14,8 @@ description_md: |-
 short_description_md: |-
   Learn about attention, the transformer, and more
 
+concept_slugs: ["tensors"]
+
 completion_percentage: 5
 
 languages:
@@ -77,11 +79,13 @@ marketing:
 
 stages:
   - slug: "zf8"
+    concept_slugs: ["tensors"]
     name: "Read safetensors"
     difficulty: very_easy
     marketing_md: |-
       In this stage, you'll implement the `inspect` command to read a safetensors file's tensor names, shapes, and values.
   - slug: "pq6"
+    concept_slugs: ["tensors"]
     name: "Embed tokens"
     difficulty: easy
     marketing_md: |-
