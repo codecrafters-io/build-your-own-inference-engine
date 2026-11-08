@@ -18,9 +18,9 @@ two-thirds of each block's numbers.
 
 Because every block adds onto the row, its numbers keep growing. So each block
 first rescales a copy of the row, a step called layer normalization. It shifts
-and scales the numbers so their average is 0 and their standard deviation is 1,
-then applies a weight and a bias of its own. For example, a row and the same row
-ten times larger come out the same, before the weight and bias:
+and scales the numbers so their average is 0 and their standard deviation is
+about 1, then applies a weight and a bias of its own. For example, a row and the
+same row ten times larger come out almost the same, before the weight and bias:
 
 ```text
 row          [2, 4, 6, 8]                 [20, 40, 60, 80]

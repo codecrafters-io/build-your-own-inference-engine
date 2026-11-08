@@ -35,10 +35,10 @@ Attention turns every row into three lists of numbers:
 - The value is what the row passes on when it matches. The row for "France"
   might pass on "a country in Europe."
 
-A score is how well one row's key answers another row's query. It's the dot
-product of the two: multiply them number by number and add up the results. A
-bigger score means a better match. The key for
-"France" answers the query for "is" well, so that pair gets a high score.
+A score is how well one row's key answers another row's query. It comes from
+the dot product of the two: multiply them number by number and add up the
+results. A bigger score means a better match. The key for "France" answers the
+query for "is" well, so that pair gets a high score.
 
 Softmax turns a row's scores into weights that add up to 1. It raises `e`, about
 2.718, to each score, which makes every number positive and lets a bigger score
