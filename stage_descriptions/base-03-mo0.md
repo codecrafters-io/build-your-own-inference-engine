@@ -112,7 +112,7 @@ head, compute each position's output row like this:
    the result into three equal parts: the query, the key, and the value.
 2. Score the position against itself and every earlier position. A score is the
    dot product of this position's query with the other position's key, divided
-   by the square root of the head size, `n_embd / n_head`.
+   by the square root of the head size. The head size is `n_embd / n_head`.
 3. Softmax the scores into weights.
 4. Add up the scored positions' values, each multiplied by its weight.
 5. Multiply that sum by `c_proj.weight` and add `c_proj.bias`.

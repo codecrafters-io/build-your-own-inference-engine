@@ -3,9 +3,10 @@ recomputing the whole sequence.
 
 ### Why keep keys and values?
 
-Each new token only needs its own query. The keys and values of the tokens
-already written do not change. Scoring a new token by running every earlier
-token through all of GPT-2's 12 layers again repeats that work. Keeping the keys
+A new token needs its own query, key, and value. The keys and values of the
+tokens already written do not change, so they can be kept and reused. Scoring a
+new token by running every earlier token through all of GPT-2's 12 layers again
+repeats that work. Keeping the keys
 and values makes the new ids come out the same, with less arithmetic. This is
 called a KV cache, short for key-value cache.
 

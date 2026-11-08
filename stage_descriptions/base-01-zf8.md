@@ -36,9 +36,9 @@ choosing each next word is the engine's job, and the engine is what you build.
 | Repeat | Feeds the new token back in, reusing past work | KV cache |
 | Run | All of it on GPT-2's real 548 MB file | Run GPT-2 |
 
-You build each row in one or two stages, and the final one runs them all.
-Generation itself starts at Embed, with the token ids. Inspect comes first
-because it makes the weights readable, and checkable.
+You build each row in one or two stages. Generation itself starts at Embed,
+with the token ids. Inspect comes first because it makes the weights readable,
+and checkable.
 
 ### Why start with inspect?
 
