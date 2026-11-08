@@ -1,5 +1,5 @@
-In this stage, you'll build `inspect`, the first command of your inference
-engine. It opens a trained model's file and prints what's inside.
+In this stage, you'll implement the `inspect` command to print what's inside a
+trained model's file.
 
 ### How an inference engine works
 
@@ -102,7 +102,19 @@ from the example, then execute your program like this:
 $ ./your_program.sh inspect model.safetensors
 ```
 
-Your program must print the JSON from the example above. The tester reads your
-output as JSON, so `[1,0.5]` and `[1.0, 0.5]` both pass. It will also run a
-file whose tensors are not in name order, a file with two tensors at different
-offsets, and a file with an `I32` tensor.
+Your program must print:
+
+```json
+[
+  {
+    "name": "scale",
+    "dtype": "F32",
+    "shape": [4],
+    "first": [1.0, 0.5, 0.25, 0.125]
+  }
+]
+```
+
+The tester reads your output as JSON, so `[1,0.5]` and `[1.0, 0.5]` both pass.
+It will also run a file whose tensors are not in name order, a file with two
+tensors at different offsets, and a file with an `I32` tensor.

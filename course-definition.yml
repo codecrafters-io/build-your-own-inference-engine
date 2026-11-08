@@ -83,7 +83,7 @@ stages:
     name: "Read safetensors"
     difficulty: very_easy
     marketing_md: |-
-      In this stage, you'll implement the `inspect` command to read a safetensors file's tensor names, shapes, and values.
+      In this stage, you'll implement the `inspect` command to print what's inside a trained model's file.
   - slug: "pq6"
     concept_slugs: ["tensors"]
     name: "Embed tokens"
