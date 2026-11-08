@@ -27,8 +27,8 @@ row          [2, 4, 6, 8]                 [20, 40, 60, 80]
 normalized   [-1.34, -0.45, 0.45, 1.34]   [-1.34, -0.45, 0.45, 1.34]
 ```
 
-Attention and the MLP work on that copy, and their results are added onto the
-original row.
+Attention and the MLP each work on their own normalized copy, and each result
+is added onto the row it started from.
 
 ### The `block` command
 

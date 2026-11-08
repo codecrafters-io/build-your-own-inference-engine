@@ -12,9 +12,10 @@ cache.
 
 For "The capital of France is" and six new tokens, greedy decoding runs
 5 + 6 + 7 + 8 + 9 + 10 = 45 rows through each layer. Keeping the keys and values
-runs 10: the 5 prompt rows once, then one row for each new token after the
-first. That saving matters when you run GPT-2's real weights later, where an
-engine that recomputes the whole sequence at every step can run out of time.
+runs 10: the 5 prompt rows once, then one row for each new token except the
+last, since the last one is never fed back in. That saving matters when you run
+GPT-2's real weights later, where an engine that recomputes the whole sequence
+at every step can run out of time.
 
 ### The `generate` command
 
