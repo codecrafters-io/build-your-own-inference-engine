@@ -20,11 +20,12 @@ model.safetensors
 ```
 
 GPT-2 doesn't read words. It reads token ids, numbers that each stand for a
-word or a part of a word. For example, "The capital of France is" is the ids
-`[464, 3139, 286, 4881, 318]`.
+word or a part of a word. For example, the prompt "The capital of France is"
+becomes the ids `[464, 3139, 286, 4881, 318]`.
 
 The weights do nothing on their own. Reading the file, running the layers, and
-choosing each next word is the engine's job, and the engine is what you build.
+choosing each next word are the engine's work, and the engine is what you
+build.
 
 | Step | What it does | Stages |
 | --- | --- | --- |

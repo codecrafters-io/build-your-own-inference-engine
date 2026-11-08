@@ -25,7 +25,8 @@ word.
 
 ### Where the weights come from
 
-Each row asks a question of the rows before it, and each of those rows answers.
+Each row asks a question of itself and the rows before it, and each of those
+rows answers.
 Attention turns every row into three lists of numbers:
 
 - The query is the question the row asks. The row for "is" might ask "which
