@@ -32,8 +32,8 @@ original row.
 
 ### The `block` command
 
-`block` takes the same three files and layer number as `attn`. Besides the four
-attention tensors, a block uses eight more. For layer 0 they are:
+`block` takes the same three files and layer number as `attn`. Along with the
+four attention tensors, a block uses eight more. For layer 0 they are:
 
 | Tensor | Shape |
 | --- | --- |

@@ -1,5 +1,5 @@
 In this stage, you'll implement the `attn` command to mix each token's row with
-the rows of the tokens before it.
+itself and the rows before it.
 
 ### Why attention?
 
@@ -80,7 +80,7 @@ matrix  [[1, 0, 2],
 result  [1*1 + 2*3, 1*0 + 2*1, 1*2 + 2*0] = [7, 2, 2]
 ```
 
-Whenever this stage or a later one says to multiply by a weight, it means this.
+Whenever this stage or later stages say to multiply by a weight, it means this.
 
 ### The `attn` command
 

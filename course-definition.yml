@@ -94,7 +94,7 @@ stages:
     name: "Causal attention"
     difficulty: medium
     marketing_md: |-
-      In this stage, you'll implement the `attn` command to mix each token's row with the rows of the tokens before it.
+      In this stage, you'll implement the `attn` command to mix each token's row with itself and the rows before it.
   - slug: "hu4"
     name: "Transformer block"
     difficulty: medium
