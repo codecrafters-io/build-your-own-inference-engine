@@ -3,17 +3,19 @@ recomputing the whole sequence.
 
 ### Why keep keys and values?
 
-Each new token only needs its own query. The keys and values of the tokens
-already written do not change. Scoring a new token by running every earlier
-token through all of GPT-2's 12 layers again repeats that work. Keeping the keys
-and values makes the new ids come out the same, with less arithmetic.
+A new token needs its own query, key, and value. The keys and values of the
+tokens already written do not change, so they can be kept and reused. Scoring a
+new token by running every earlier token through all of GPT-2's 12 layers again
+repeats that work. Keeping the keys and values makes the new ids come out the
+same, with less arithmetic. This is called a KV cache, short for key-value
+cache.
 
 For "The capital of France is" and six new tokens, greedy decoding runs
 5 + 6 + 7 + 8 + 9 + 10 = 45 rows through each layer. Keeping the keys and values
-runs 10: the 5 prompt rows once, then one row for each new token after the
-first. That saving matters when you run GPT-2's real weights in a later stage,
-where an engine that recomputes the whole sequence at every step can run out of
-time.
+runs 10: the 5 prompt rows once, then one row for each new token except the
+last, since the last one is never fed back in. That saving matters when you run
+GPT-2's real weights later, where an engine that recomputes the whole sequence
+at every step can run out of time.
 
 ### The `generate` command
 
@@ -21,8 +23,8 @@ The command is the same one as greedy decoding. `tokens.json` again holds a
 count, and there is no temperature. The ids must match a run that recomputes the
 whole sequence at every step.
 
-A key and a value are the vectors from step 1 of attention, after `c_attn` and
-split into heads. Keep them in a list for each layer and each head:
+A key and a value are the lists of numbers from step 1 of attention, after
+`c_attn` and split into heads. Keep them in a list for each layer and each head:
 
 ```text
 keys[layer][head], values[layer][head] = empty lists

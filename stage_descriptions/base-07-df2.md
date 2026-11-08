@@ -1,5 +1,5 @@
-In this stage, you'll add temperature and top-p sampling to `generate`, using
-one random number from stdin per token.
+In this stage, you'll add sampling to `generate`, to pick each new token at
+random, weighted by its probability.
 
 ### Why sample?
 

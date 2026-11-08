@@ -1,5 +1,5 @@
-In this stage, you'll implement the `logits` command to run every layer and
-print the logits for the last position.
+In this stage, you'll implement the `logits` command to score every token as
+the next one.
 
 ### Why logits?
 
@@ -23,8 +23,16 @@ them matter, so " the" leads " now" by 0.57.
 
 ### The `logits` command
 
-`config.json` is the same format as for `attn`, and `ids.json` is the same
-format as for `embed`. Compute the logits like this:
+`logits` reads three files:
+
+- `model.safetensors`, with every tensor `embed` and `block` read, plus a final
+  layer norm:
+    - `ln_f.weight`, with shape `[n_embd]`
+    - `ln_f.bias`, with shape `[n_embd]`
+- `config.json`, the same format as for `attn`
+- `ids.json`, the same format as for `embed`
+
+Compute the logits like this:
 
 ```text
 rows = the embedding of the ids, as embed does

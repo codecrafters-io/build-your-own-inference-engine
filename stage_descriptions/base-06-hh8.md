@@ -76,7 +76,7 @@ Your program must print:
 ```
 
 The ids have to match exactly. The tester will also run a file where every token
-has the same score, so the lower id, 0, is chosen twice.
+has the same score.
 
 ### Notes
 

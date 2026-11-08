@@ -3,9 +3,10 @@ block.
 
 ### Why a block?
 
-GPT-2 stacks 12 of these blocks. A block does two things to each row. It runs
-the attention you built with `attn`, then the MLP, short for multilayer
-perceptron. Each result is added onto the row instead of replacing it.
+GPT-2 is a transformer, a model built as a stack of identical blocks, and it
+has 12 of them. A block does two things to each row. It runs the attention you
+built with `attn`, then the MLP, short for multilayer perceptron. Each result is
+added onto the row instead of replacing it.
 
 Attention moves information between rows. The MLP then works on each row alone,
 on what that row now holds. It's two multiplies by a weight, with a function
@@ -13,24 +14,26 @@ called GELU between them. The first widens the row from 768 numbers to 3,072,
 and the second brings it back to 768. These two weight tables hold about
 two-thirds of each block's numbers.
 
+### Layer normalization
+
 Because every block adds onto the row, its numbers keep growing. So each block
 first rescales a copy of the row, a step called layer normalization. It shifts
-and scales the numbers so their average is 0 and their standard deviation is 1,
-then applies a weight and a bias of its own. For example, a row and the same row
-ten times larger come out the same, before the weight and bias:
+and scales the numbers so their average is 0 and their standard deviation is
+about 1, then applies a weight and a bias of its own. For example, a row and the
+same row ten times larger come out almost the same, before the weight and bias:
 
 ```text
 row          [2, 4, 6, 8]                 [20, 40, 60, 80]
 normalized   [-1.34, -0.45, 0.45, 1.34]   [-1.34, -0.45, 0.45, 1.34]
 ```
 
-Attention and the MLP work on that copy, and their results are added onto the
-original row.
+Attention and the MLP each work on their own normalized copy, and each result
+is added onto the row it started from.
 
 ### The `block` command
 
-`block` takes the same three files and layer number as `attn`. Besides the four
-attention tensors, a block uses eight more. For layer 0 they are:
+`block` takes the same three files and layer number as `attn`. Along with the
+four attention tensors, a block uses eight more. For layer 0 they are:
 
 | Tensor | Shape |
 | --- | --- |
@@ -76,7 +79,7 @@ Copy constants like 0.00001 and 0.044715 exactly as written. They're part of
 GPT-2's definition, so there's nothing to work out about them, and a different
 value changes the output.
 
-### Example
+### One block, step by step
 
 In this example's file, both layer norms have weight `[1, 1]` and bias `[0, 0]`,
 and every attention and MLP tensor is all zeros. The input is `[[1, 2]]`:
@@ -188,13 +191,10 @@ Your program must print:
 ```
 
 The tester allows a difference of 0.0001 on each number. It will also run a
-block whose MLP changes the row to about `[1.841192, 2]`, and layer 1 of a
-two-layer file.
+block whose MLP changes the row, and layer 1 of a two-layer file.
 
 ### Notes
 
-- Step 3 adds onto the block's input, not onto the normalized rows from step 1.
-  Adding onto the normalized rows changes every number in the output.
 - The variance divides by the count of numbers in the row, not by one less, as
   some statistics functions do.
 - Read the MLP's width from the shape of `mlp.c_fc.weight` rather than computing

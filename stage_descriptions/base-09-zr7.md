@@ -23,30 +23,13 @@ The tensors are the ones earlier stages read. `wte.weight` has shape
 with the weights, and you can skip it because your attention already drops the
 later scores.
 
-Keep each number as a 32-bit float, read from the file's bytes. Storing every
-number as a separate object multiplies the memory the weights need, and the test
-server gives your program about 2.5 GB.
-
+The starter code's loader already keeps each number as a 32-bit float, so the
+weights take about 550 MB of memory. The test server gives your program about
+2.5 GB, so keep the numbers the way the loader returns them, rather than turning
+each one into a separate object.
 {{#lang_is_python}}
-A Python `float` takes 24 bytes, so a list of GPT-2's numbers needs about 6 GB,
-more than the test server allows. A
-[`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
-reads the same bytes as floats, with no copy:
-
-```python
-values = memoryview(data)[start:end].cast("f")
-```
-
-`values[i]` is still a Python `float`, but the view stores 4 bytes per number.
+A list of Python floats, for example, would need about 6 GB.
 {{/lang_is_python}}
-{{#lang_is_go}}
-Decode each tensor into a `[]float32` with `binary.LittleEndian.Uint32` and
-`math.Float32frombits`. That keeps the weights at about 550 MB.
-{{/lang_is_go}}
-{{#lang_is_rust}}
-Decode each tensor into a `Vec<f32>` with `f32::from_le_bytes`. That keeps the
-weights at about 550 MB.
-{{/lang_is_rust}}
 
 ### Tests
 

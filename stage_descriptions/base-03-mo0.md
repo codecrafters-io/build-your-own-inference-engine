@@ -1,5 +1,5 @@
 In this stage, you'll implement the `attn` command to mix each token's row with
-the rows of the tokens before it.
+itself and the rows before it.
 
 ### Why attention?
 
@@ -25,7 +25,8 @@ word.
 
 ### Where the weights come from
 
-Each row asks a question of the rows before it, and each of those rows answers.
+Each row asks a question of itself and the rows before it, and each of those
+rows answers.
 Attention turns every row into three lists of numbers:
 
 - The query is the question the row asks. The row for "is" might ask "which
@@ -35,9 +36,10 @@ Attention turns every row into three lists of numbers:
 - The value is what the row passes on when it matches. The row for "France"
   might pass on "a country in Europe."
 
-A score is how well one row's key answers another row's query. It's the dot
-product of the two, so a bigger score means a better match. The key for
-"France" answers the query for "is" well, so that pair gets a high score.
+A score is how well one row's key answers another row's query. It comes from
+the dot product of the two: multiply them number by number and add up the
+results. A bigger score means a better match. The key for "France" answers the
+query for "is" well, so that pair gets a high score.
 
 Softmax turns a row's scores into weights that add up to 1. It raises `e`, about
 2.718, to each score, which makes every number positive and lets a bigger score
@@ -67,9 +69,8 @@ me?", and puts almost all of each word's weight on that word:
 
 ### Multiplying by a weight
 
-The steps below use two operations on lists of numbers. The dot product of two
-lists of the same length multiplies them pair by pair and adds up the results.
-Multiplying a row by a matrix is a loop of dot products. If the row has `n`
+The steps below also multiply a row by a matrix, which is a loop of dot
+products. If the row has `n`
 numbers and the matrix has shape `[n, m]`, the result has `m` numbers, and
 number `j` is the dot product of the row with column `j` of the matrix:
 
@@ -80,7 +81,7 @@ matrix  [[1, 0, 2],
 result  [1*1 + 2*3, 1*0 + 2*1, 1*2 + 2*0] = [7, 2, 2]
 ```
 
-Whenever this stage or a later one says to multiply by a weight, it means this.
+Whenever this stage or later stages say to multiply by a weight, it means this.
 
 ### The `attn` command
 
@@ -112,12 +113,12 @@ head, compute each position's output row like this:
    the result into three equal parts: the query, the key, and the value.
 2. Score the position against itself and every earlier position. A score is the
    dot product of this position's query with the other position's key, divided
-   by the square root of the head size, `n_embd / n_head`.
+   by the square root of the head size. The head size is `n_embd / n_head`.
 3. Softmax the scores into weights.
 4. Add up the scored positions' values, each multiplied by its weight.
 5. Multiply that sum by `c_proj.weight` and add `c_proj.bias`.
 
-### Example
+### One head, step by step
 
 This example has one head of size 1, and the input is `[[1], [2]]`. Each step's
 result is shown under its number:
