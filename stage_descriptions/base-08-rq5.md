@@ -46,12 +46,13 @@ repeat count times:
 The softmax and the output projection are unchanged. The layer norms and the MLP
 work on one row at a time, so they only need the new row.
 
-In this example the prompt is `[0]` and `tokens.json` is `{ "count": 3 }`.
-`ln_f.weight` is `[0, 0]` and `ln_f.bias` is `[0, 1]`, so token 1 has the
-highest score at every step. The ids are:
+In this example `ids.json` is `[0, 1, 0]` and `tokens.json` is
+`{ "count": 3 }`. The model has two tokens, and the rows of `wpe.weight` differ
+from each other, so a new token embedded at the wrong position changes what
+comes out. The ids are:
 
 ```json
-[1, 1, 1]
+[0, 1, 1]
 ```
 
 ### Tests
@@ -65,10 +66,12 @@ $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 Your program must print:
 
 ```json
-[1, 1, 1]
+[0, 1, 1]
 ```
 
-The ids have to match exactly.
+The ids have to match exactly. The tester will also run a two-id prompt, where
+embedding each new token at position 0 instead of at its index in the whole
+sequence changes the ids.
 
 ### Notes
 
