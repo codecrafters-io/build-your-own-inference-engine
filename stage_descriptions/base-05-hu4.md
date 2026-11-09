@@ -54,9 +54,10 @@ gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
 
 ### One block, step by step
 
-This example continues the one from a previous stage. The layer norms have
-weight `[1, 1]` and bias `[0, 0]`, the MLP's weights keep the first two numbers
-of the wide row and put them back, and the input is `[[1, 2]]`:
+This example continues the one you worked through for the layer norm and the
+residual add. The layer norms have weight `[1, 1]` and bias `[0, 0]`, the MLP's
+weights keep the first two numbers of the wide row and put them back, and the
+input is `[[1, 2]]`:
 
 ```text
 // steps 1 to 3, as before
