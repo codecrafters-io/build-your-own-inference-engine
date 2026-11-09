@@ -3,11 +3,16 @@ layer norm and a residual add.
 
 ### Why wrap attention?
 
-`attn` mixes each row with the rows before it, but a model doesn't use that
-output on its own. GPT-2 is a
-[transformer](https://www.3blue1brown.com/lessons/gpt), a stack of 12 identical
-blocks, and each block adds what attention found onto the row it started from
-rather than replacing it, so the row keeps what it already held.
+`attn` replaces each row with a weighted average of itself and the rows before
+it, and that throws something away. In the weights you saw when you built
+`attn`, only 0.06 of the new row for "is" came from "is". The rest came from
+"France" and "The", so the row now says what the sentence is about and has
+nearly forgotten which word it is.
+
+A [transformer](https://www.3blue1brown.com/lessons/gpt) keeps both. GPT-2 is a
+stack of 12 identical blocks, and a block adds attention's output onto the row
+it started from instead of replacing it. The row keeps what it was, plus what
+attention found.
 
 Adding onto a row over and over makes its numbers grow. So each block first
 rescales a copy of the row, a step called
@@ -21,8 +26,8 @@ row          [2, 4, 6, 8]                 [20, 40, 60, 80]
 normalized   [-1.34, -0.45, 0.45, 1.34]   [-1.34, -0.45, 0.45, 1.34]
 ```
 
-Attention runs on the normalized copy, and its output is added onto the row the
-copy came from. A block wraps a second step the same way, which later stages
+So attention runs on the normalized copy, and its output is added onto the row
+the copy came from. A block wraps a second step the same way, which later stages
 add.
 
 ### The `block` command
@@ -57,8 +62,8 @@ layer_norm(x) = (x - mean) / sqrt(variance + 0.00001) * weight + bias
 Copy 0.00001 exactly as written. It's part of GPT-2's definition, and a
 different value changes the output.
 
-The file also holds `ln_2` and the MLP tensors. A later stage uses them, and in
-this stage's files they are all zeros, so you can ignore them for now.
+The file also holds `ln_2` and the MLP tensors, which later stages use. In this
+stage's files they are all zeros, so you can ignore them for now.
 
 ### One block, step by step
 
