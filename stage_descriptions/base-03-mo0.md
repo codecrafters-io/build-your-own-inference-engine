@@ -19,69 +19,26 @@ example, in one of its later steps, GPT-2 gives the row for "is" these weights:
 | "France" | 0.57 |
 | "is" | 0.06 |
 
-More than half of the new row for "is" comes from "France". Most of the rest
-goes to "The", because GPT-2 often puts weight it doesn't need on the first
-word.
+More than half of the new row for "is" comes from "France". GPT-2 often parks
+weight it doesn't need on the first word, which is the 0.35 on "The".
 
 ### Where the weights come from
 
-Each row asks a question of itself and the rows before it, and each of those
-rows answers.
-Attention turns every row into three lists of numbers:
+Attention turns every row into three lists of numbers. The query is the question
+the row asks, the key is what the row says about itself, and the value is what
+the row passes on when it matches. The row for "is" might ask "which earlier
+word names a place?", and the row for "France" might answer "I name a place."
 
-- The query is the question the row asks. The row for "is" might ask "which
-  earlier word names a place?"
-- The key is what the row says about itself. The row for "France" might say
-  "I name a place."
-- The value is what the row passes on when it matches. The row for "France"
-  might pass on "a country in Europe."
-
-A score is how well one row's key answers another row's query. It comes from
-the dot product of the two: multiply them number by number and add up the
-results. A bigger score means a better match. The key for "France" answers the
-query for "is" well, so that pair gets a high score.
-
-Softmax turns a row's scores into weights that add up to 1. It raises `e`, about
-2.718, to each score, which makes every number positive and lets a bigger score
-count for much more. Then it divides each result by their total:
-
-```text
-scores     2       4
-e^score    7.39    54.60      total 61.99
-weights    0.119   0.881      7.39 / 61.99 and 54.60 / 61.99
-```
-
-A score that leads by 2 gets about 7 times the weight.
+A score is how well one row's key answers another row's query, and it comes from
+the dot product of the two, so the pair above scores highly.
+[Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/)
+then turns a row's scores into weights that add up to 1, by raising `e` to each
+score and dividing by their total. A score that leads by 2 gets about 7 times
+the weight.
 
 GPT-2 asks 12 questions at once. It splits each row into 12 slices, called
 heads, and each head runs its own weighted average on its slice. The weights for
-"is" above came from one head. Another head asks "which word came just before
-me?", and puts almost all of each word's weight on that word:
-
-```text
-"capital"  →  "The"
-"of"       →  "capital"
-"France"   →  "of"
-"is"       →  "France"
-```
-
-"The" has no word before it, so it uses itself.
-
-### Multiplying by a weight
-
-The steps below also multiply a row by a matrix, which is a loop of dot
-products. If the row has `n`
-numbers and the matrix has shape `[n, m]`, the result has `m` numbers, and
-number `j` is the dot product of the row with column `j` of the matrix:
-
-```text
-row     [1, 2]
-matrix  [[1, 0, 2],
-         [3, 1, 0]]
-result  [1*1 + 2*3, 1*0 + 2*1, 1*2 + 2*0] = [7, 2, 2]
-```
-
-Whenever this stage or later stages say to multiply by a weight, it means this.
+"is" above came from one head.
 
 ### The `attn` command
 
@@ -94,17 +51,21 @@ Whenever this stage or later stages say to multiply by a weight, it means this.
     { "n_embd": 1, "n_head": 1, "n_layer": 1, "n_positions": 4, "vocab_size": 2 }
     ```
 
-- `model.safetensors` is a safetensors file, like the one `inspect` reads. It
-  holds four weight tables for each layer. Their names start with `h.` and the
-  layer number, so for layer 0 they are:
+- `model.safetensors` holds four weight tables per layer, named with `h.` and
+  the layer number. For layer 0:
     - `h.0.attn.c_attn.weight`, with shape `[n_embd, 3 * n_embd]`
     - `h.0.attn.c_attn.bias`, with shape `[3 * n_embd]`
     - `h.0.attn.c_proj.weight`, with shape `[n_embd, n_embd]`
     - `h.0.attn.c_proj.bias`, with shape `[n_embd]`
-- The layer number is the layer to run: `0`. `model.safetensors` holds the
-  weights for every layer, and `attn` runs only one of them.
+- The layer number is the layer to run: `0`. The file holds every layer's
+  weights, and `attn` runs one of them.
 - `input.json` is a JSON array of the rows to mix, one row per position:
   `[[1], [2]]`.
+
+Multiplying a row by a weight means
+[multiplying matrices](https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:matrices/x9e81a4f98389efdf:multiplying-matrices-by-matrices/a/multiplying-matrices):
+a row of `n` numbers times a weight of shape `[n, m]` gives `m` numbers, where
+number `j` is the dot product of the row with column `j`.
 
 `attn` turns each input row into an output row of the same length. With one
 head, compute each position's output row like this:
@@ -156,9 +117,9 @@ With `n_head` heads, split the query, the key, and the value into `n_head` equal
 slices. Run steps 2 to 4 on each slice separately, then put the results side by
 side, in order, before step 5.
 
-For example, with `n_embd` 2 and 2 heads, each head gets one number. Take the
-input `[[1, 0], [0, 1]]`, with weights that copy each row into its query, key,
-and value. Here is position 1, whose query is `[0, 1]`:
+With `n_embd` 2 and 2 heads, each head gets one number. Take the input
+`[[1, 0], [0, 1]]`, with weights that copy each row into its query, key, and
+value. Here is position 1:
 
 ```text
 head 0, number 0    scores  0*1 = 0,  0*0 = 0    weights  [0.5, 0.5]
@@ -168,8 +129,8 @@ head 1, number 1    scores  1*0 = 0,  1*1 = 1    weights  [0.269, 0.731]
 side by side        [0.5, 0.731]
 ```
 
-With one head of size 2 instead, the same rows give `[0.330, 0.670]`, because
-the softmax then runs once over the whole row.
+With one head of size 2 the same rows give `[0.330, 0.670]`, because the softmax
+then runs once over the whole row.
 
 ### Hints
 
@@ -238,6 +199,11 @@ two heads, and layer 1.
 - With GPT-2's real weights, scores can be large enough that raising `e` to them
   overflows. Subtract the largest score from every score first. The weights come
   out the same, because softmax only depends on the differences between scores.
+- To go deeper on attention, 3Blue1Brown's
+  [Attention in transformers](https://www.3blue1brown.com/lessons/attention)
+  animates every step, and
+  [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
+  walks through the same vectors in writing.
 - To see attention on your own sentences, the
   [Transformer Explainer](https://poloclub.github.io/transformer-explainer/)
   runs GPT-2 in the browser and draws each head's weights.
