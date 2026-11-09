@@ -3,9 +3,9 @@ In this stage, you'll run your `generate` command on GPT-2's real weights.
 ### Why run GPT-2?
 
 Every file so far was a tiny model built to check one rule. GPT-2's real file
-uses the same tensor names, at full size: 124 million numbers in 548 MB. Your
-engine already runs every step GPT-2 runs, so on the real weights it should
-write the same words GPT-2 does.
+uses the same tensor names, at full size: 160 tensors holding 124 million
+weights. Your engine already runs every step GPT-2 runs, so on the real weights
+it should write the same words GPT-2 does.
 
 For example, take the prompt "The capital of France is". Its ids are
 `[464, 3139, 286, 4881, 318]`. GPT-2 continues it with " the capital of the
@@ -21,7 +21,8 @@ The tensors are the ones earlier stages read. `wte.weight` has shape
 `[50257, 768]`, and there are 12 layers with 12 heads each. The file also has an
 `h.<layer>.attn.bias` tensor in every layer. It is GPT-2's causal mask, saved
 with the weights, and you can skip it because your attention already drops the
-later scores.
+later scores. Those masks are 50 MB of the file's 548 MB, which is why the file
+is larger than its weights.
 
 The starter code's loader already keeps each number as a 32-bit float, so the
 weights take about 550 MB of memory. The test server gives your program about
