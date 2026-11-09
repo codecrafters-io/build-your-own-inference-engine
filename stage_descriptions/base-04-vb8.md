@@ -5,9 +5,8 @@ layer norm and a residual add.
 
 `attn` replaces each row with a weighted average of itself and the rows before
 it, and that throws something away. In the weights you saw when you built
-`attn`, only 0.06 of the new row for "is" came from "is". The rest came from
-"France" and "The", so the row now says what the sentence is about and has
-nearly forgotten which word it is.
+`attn`, 0.57 of the new row for "is" came from "France" and only 0.06 came from
+"is". The row has taken on the words before it and lost most of what it held.
 
 A [transformer](https://www.3blue1brown.com/lessons/gpt) keeps both. GPT-2 is a
 stack of 12 identical blocks, and a block adds attention's output onto the row
