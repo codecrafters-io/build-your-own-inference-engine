@@ -9,7 +9,7 @@ it should write the same words GPT-2 does.
 
 For example, take the prompt "The capital of France is". Its ids are
 `[464, 3139, 286, 4881, 318]`. GPT-2 continues it with " the capital of the
-French Republic", which is these six ids:
+French Republic". Those six ids are:
 
 ```json
 [262, 3139, 286, 262, 4141, 2066]
@@ -25,7 +25,7 @@ later scores. Those masks are 50 MB of the file's 548 MB, which is why the file
 is larger than its weights.
 
 The starter code's loader already keeps each number as a 32-bit float, so the
-weights take about 550 MB of memory. The test server gives your program about
+whole file takes about 550 MB of memory. The test server gives your program about
 2.5 GB, so keep the numbers the way the loader returns them, rather than turning
 each one into a separate object.
 {{#lang_is_python}}

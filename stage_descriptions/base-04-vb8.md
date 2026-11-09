@@ -22,8 +22,8 @@ normalized   [-1.34, -0.45, 0.45, 1.34]   [-1.34, -0.45, 0.45, 1.34]
 ```
 
 Attention runs on the normalized copy, and its output is added onto the row the
-copy came from. A block wraps a second step the same way, and you'll add that in
-a later stage.
+copy came from. A block wraps a second step the same way, which later stages
+add.
 
 ### The `block` command
 
