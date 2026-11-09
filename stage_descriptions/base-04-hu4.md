@@ -11,16 +11,16 @@ added onto the row instead of replacing it.
 Attention moves information between rows. The MLP then works on each row alone,
 on what that row now holds. It's two multiplies by a weight, with a function
 called GELU between them. The first widens the row from 768 numbers to 3,072,
-and the second brings it back to 768. These two weight tables hold about
-two-thirds of each block's numbers.
+and the second brings it back. Those two weight tables hold about two-thirds of
+each block's numbers.
 
 ### Layer normalization
 
 Because every block adds onto the row, its numbers keep growing. So each block
 first rescales a copy of the row, a step called layer normalization. It shifts
 and scales the numbers so their average is 0 and their standard deviation is
-about 1, then applies a weight and a bias of its own. For example, a row and the
-same row ten times larger come out almost the same, before the weight and bias:
+about 1, then applies a weight and a bias of its own. A row and the same row ten
+times larger come out almost the same, before the weight and bias:
 
 ```text
 row          [2, 4, 6, 8]                 [20, 40, 60, 80]
@@ -47,8 +47,7 @@ four attention tensors, a block uses eight more. For layer 0 they are:
 | `h.0.mlp.c_proj.bias` | `[n_embd]` |
 
 A block runs these steps on the input rows. The two lines under the diagram are
-the additions in steps 3 and 6. Each one adds onto the row from before the layer
-norm, not onto the normalized copy:
+the additions in steps 3 and 6, each onto the row from before its layer norm:
 
 ```text
 row ─┬─► ln_1 ─► attention ─► + ─┬─► ln_2 ─► MLP ─► + ─► output
@@ -66,9 +65,8 @@ row ─┬─► ln_1 ─► attention ─► + ─┬─► ln_2 ─► MLP ─
 6. Multiply by `mlp.c_proj.weight`, add `mlp.c_proj.bias`, and add the result
    onto the rows from step 3.
 
-Layer norm and GELU are each one formula. In layer norm, the mean and the
-variance are taken over the row's numbers, and the variance is the average of
-`(x - mean)^2`:
+Layer norm and GELU are each one formula. The mean and the variance are taken
+over the row's numbers, and the variance is the average of `(x - mean)^2`:
 
 ```text
 layer_norm(x) = (x - mean) / sqrt(variance + 0.00001) * weight + bias
@@ -76,13 +74,12 @@ gelu(x)       = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
 ```
 
 Copy constants like 0.00001 and 0.044715 exactly as written. They're part of
-GPT-2's definition, so there's nothing to work out about them, and a different
-value changes the output.
+GPT-2's definition, and a different value changes the output.
 
 ### One block, step by step
 
-In this example's file, both layer norms have weight `[1, 1]` and bias `[0, 0]`,
-and every attention and MLP tensor is all zeros. The input is `[[1, 2]]`:
+Both layer norms have weight `[1, 1]` and bias `[0, 0]`, every attention and MLP
+tensor is all zeros, and the input is `[[1, 2]]`:
 
 ```text
 // 1. layer norm with ln_1
@@ -154,8 +151,7 @@ for each position i:
 <summary>Why add the results onto the input instead of replacing it?</summary>
 
 Adding lets each row keep what it had and take on what attention or the MLP
-found. Each of GPT-2's 12 blocks adds a little to the row, rather than rewriting
-it.
+found. Each of GPT-2's 12 blocks adds a little, rather than rewriting the row.
 
 </details>
 
@@ -164,8 +160,8 @@ it.
 
 GELU keeps positive numbers close to themselves and pushes negative ones toward
 0. Without it, steps 5 and 6 would each be a multiply and an add, and two of
-those in a row work out to a single multiply and add. The wider middle would
-add nothing.
+those in a row work out to a single multiply and add. The wider middle would add
+nothing.
 
 </details>
 
