@@ -13,6 +13,15 @@ A token's row says which token it is, but not where it sits in the prompt. Later
 - `wte.weight` has a row for each token id
 - `wpe.weight` has a row for each position a prompt can have (1,024 in GPT-2): row 0 for the first token, row 1 for the second, and so on
 
+For example, "France" is token 4881, and it sits at position 3 in "The capital of France is". Here are the first 4 of its 768 numbers in GPT-2, rounded:
+
+```text
+row 4881 of wte.weight      [-0.07,  0.05,  0.16, -0.07, ...]
+row 3 of wpe.weight       + [ 0.00, -0.07,  0.11,  0.00, ...]
+                            ---------------------------------
+embedding of "France"     = [-0.07, -0.02,  0.27, -0.07, ...]
+```
+
 ### The `embed` Command
 
 `embed` reads two files:
