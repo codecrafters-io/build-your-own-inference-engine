@@ -19,7 +19,7 @@ after picking " Republic"    none, it's the last token     10
 
 The last new token is never fed back in, so it doesn't need a row.
 
-That saving matters when you run GPT-2's real weights in a later stage.{{#lang_is_python}} There, a Python engine took about 90 seconds on the test servers with a KV cache, and ran past their 300-second limit without one.{{/lang_is_python}}
+That saving matters when you run GPT-2's real weights in later stages.{{#lang_is_python}} There, a Python engine took about 90 seconds on the test servers with a KV cache, and ran past their 300-second limit without one.{{/lang_is_python}}
 
 ### Running One Row
 
