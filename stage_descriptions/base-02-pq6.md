@@ -4,7 +4,7 @@ In this stage, you'll implement the `embed` command to turn each token id into a
 
 GPT-2 doesn't work on text directly. It works on tokens, which are words or pieces of words, and each token has a number called its id. GPT-2 knows 50,257 tokens, numbered from 0. For example, the prompt "The capital of France is" is five tokens, with the ids `[464, 3139, 286, 4881, 318]`.
 
-An id is only a label, like a locker number, so adding or multiplying ids would mean nothing. Instead, GPT-2 describes each token with a row of 768 numbers, and all of its later steps do their arithmetic on these rows. 768 is just the size GPT-2 uses, and bigger versions of GPT-2 use longer rows.
+GPT-2 does all its work with arithmetic, so it needs numbers that describe each token. An id can't do that. It's only a label, like a locker number: it tells you which token it is, but nothing about it. So GPT-2 swaps each id for a row of 768 numbers that describe the token, and all of its later steps do their arithmetic on these rows. 768 is just the size GPT-2 uses, and bigger versions of GPT-2 use longer rows.
 
 The numbers in each row were set during training, and tokens used in similar ways ended up with similar rows. For example, the rows most similar to the row for Monday are the rows for the other six days of the week.
 
