@@ -8,7 +8,7 @@ An id is only a label, like a locker number, so adding or multiplying ids would 
 
 The numbers in each row were set during training, and tokens used in similar ways ended up with similar rows. For example, the rows most similar to the row for Monday are the rows for the other six days of the week.
 
-A token's row says which token it is, but not where it sits in the prompt. Later steps mix the rows together without looking at where they came from, so GPT-2 also adds a row for each token's position. A token's [embedding](https://www.3blue1brown.com/lessons/gpt) is the sum of these two rows, added number by number. Both rows come from tables in GPT-2's weights:
+A token's row says which token it is, but not where it sits in the prompt. Later steps mix the rows together without looking at where they came from, so GPT-2 also adds a row for each token's position. A token's [embedding](https://en.wikipedia.org/wiki/Word_embedding) is the sum of these two rows, added number by number. Both rows come from tables in GPT-2's weights:
 
 - `wte.weight` has a row for each token id
 - `wpe.weight` has a row for each position a prompt can have (1,024 in GPT-2): row 0 for the first token, row 1 for the second, and so on
