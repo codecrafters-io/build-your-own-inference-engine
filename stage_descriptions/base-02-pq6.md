@@ -45,36 +45,54 @@ embedding of "France"     = [-0.07, -0.02,  0.27, -0.07, ...]
 
 `embed` reads two files:
 
-- `model.safetensors`, a weights file like the one `inspect` reads, which holds `wte.weight` and `wpe.weight`
+- `model.safetensors`, a weights file like the one `inspect` reads, which holds the two tables, `wte.weight` and `wpe.weight`
 - `ids.json`, a JSON array of token ids, like `[1, 0]`
 
-It prints each token's embedding, in order, as a JSON array of rows.
+It prints one embedding for each id, in order, as a JSON array of rows. For the id at position `i` in `ids.json`, your program must:
 
-Each table is a [tensor](https://app.codecrafters.io/concepts/tensors): a flat list of numbers, plus a shape that gives its size. A table's shape is `[rows, columns]`, and its rows are stored one after another, so row `r` starts at index `r * columns`:
+1. Take row `id` of `wte.weight`
+2. Take row `i` of `wpe.weight`
+3. Add the two rows, number by number
+
+### Finding a Row
+
+The loader doesn't give you `wte.weight` and `wpe.weight` as lists of rows. Each one is a [tensor](https://app.codecrafters.io/concepts/tensors): one flat list of all its numbers, plus a shape that says how to cut that list into rows. A shape of `[rows, columns]` means the rows sit one after another in the list.
+
+Here's a tensor with shape `[3, 2]`, shown as a table and as the flat list it's stored as:
 
 ```text
-values   1, 2, 3, 4, 5, 6        shape [3, 2], so 2 columns
-row 0    1, 2                    starts at index 0 * 2 = 0
-row 1    3, 4                    starts at index 1 * 2 = 2
-row 2    5, 6                    starts at index 2 * 2 = 4
+as a table:
+
+row 0    0.1  0.2
+row 1    0.3  0.4
+row 2    0.5  0.6
+
+as a flat list:
+
+index      0    1    2    3    4    5
+values   0.1  0.2  0.3  0.4  0.5  0.6
+         --------  --------  --------
+          row 0     row 1     row 2
 ```
 
+Each row is 2 numbers long, so row 1 starts at index 2, and row 2 starts at index 4. In general, row `r` starts at index `r * columns`. In GPT-2's `wte.weight`, each row is 768 numbers long, so France's row starts at index 4881 * 768 = 3,748,608.
+
 {{#lang_is_python}}
-The starter code's `load_tensors` returns a dictionary like `{"wte.weight": {"dtype": "F32", "shape": [2, 2], "values": ...}}`. For each tensor, `"values"` holds its numbers and `"dtype"` says what kind they are, where `F32` means 32-bit floats.
+The starter code's `load_tensors` returns a dictionary like `{"wte.weight": {"dtype": "F32", "shape": [2, 2], "values": ...}}`. For each tensor, `"values"` holds its flat list of numbers and `"dtype"` says what kind they are, where `F32` means 32-bit floats.
 {{/lang_is_python}}
 {{#lang_is_rust}}
-The starter code's `load_tensors` returns a `HashMap<String, Tensor>`, and each `Tensor` holds its shape and its numbers in its `shape` and `values` fields.
+The starter code's `load_tensors` returns a `HashMap<String, Tensor>`, and each `Tensor` holds its shape in `shape` and its flat list of numbers in `values`.
 {{/lang_is_rust}}
 {{#lang_is_go}}
-The starter code's `loadTensors` returns a `map[string]tensor`, and each `tensor` holds its shape and its numbers in its `Shape` and `Values` fields.
+The starter code's `loadTensors` returns a `map[string]tensor`, and each `tensor` holds its shape in `Shape` and its flat list of numbers in `Values`.
 {{/lang_is_go}}
 
-For example, take two tiny tables with 2 numbers per row:
+For example, say `model.safetensors` holds two tiny tables with 2 numbers per row:
 
-- `wte.weight`, with shape `[2, 2]` and values `1, 2, 3, 4`
-- `wpe.weight`, with shape `[2, 2]` and values `10, 20, 30, 40`
+- `wte.weight`, with shape `[2, 2]` and values `1, 2, 3, 4`, so its rows are `[1, 2]` and `[3, 4]`
+- `wpe.weight`, with shape `[2, 2]` and values `10, 20, 30, 40`, so its rows are `[10, 20]` and `[30, 40]`
 
-With the ids `[1, 0]`, the embeddings are:
+With the ids `[1, 0]` in `ids.json`, the embeddings are:
 
 | Position | Id | `wte.weight` row | `wpe.weight` row | Embedding |
 | --- | --- | --- | --- | --- |
@@ -83,19 +101,19 @@ With the ids `[1, 0]`, the embeddings are:
 
 ### Tests
 
-The tester will write the example's `model.safetensors` and `ids.json`, then execute your program like this:
+The tester will write a `model.safetensors` and an `ids.json`, then execute your program like this:
 
 ```bash
 $ ./your_program.sh embed model.safetensors ids.json
 ```
 
-Your program must print:
+The tester will verify that:
 
-```json
-[[13.0, 24.0], [31.0, 42.0]]
-```
+- Your program prints only a JSON array to stdout, with one row for each id in `ids.json`, in order
+- Each row has as many numbers as a row of `wte.weight`
+- Each number is the token's `wte.weight` number plus its position's `wpe.weight` number, to within 0.00001
 
-The tester reads your output as JSON numbers, so `13` and `13.0` both pass. It will also run a prompt that repeats an id at two positions, and a prompt with three tokens.
+The tester reads your output as JSON numbers, so `13` and `13.0` both match. It will run a few different prompts, including one that repeats an id at two positions.
 
 ### Notes
 
