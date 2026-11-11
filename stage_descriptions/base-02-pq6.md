@@ -6,6 +6,18 @@ GPT-2 doesn't work on text directly. It works on tokens, which are words or piec
 
 GPT-2 does all its work with arithmetic, so it needs numbers that describe each token. An id can't do that. It's only a label, like a locker number: it tells you which token it is, but nothing about it. So GPT-2 swaps each id for a row of 768 numbers that describe the token, and all of its later steps do their arithmetic on these rows. 768 is just the size GPT-2 uses, and bigger versions of GPT-2 use longer rows.
 
+GPT-2 keeps these rows in a table called `wte.weight`, with one row for each of its 50,257 tokens:
+
+```text
+wte.weight     768 columns →
+row 0          [ ... 768 numbers ... ]               ← token 0
+row 1          [ ... ]
+...
+row 4881       [-0.07,  0.05,  0.16, -0.07, ... ]    ← "France"
+...
+row 50256      [ ... ]
+```
+
 The numbers in each row were set during [training](https://developers.google.com/machine-learning/glossary#training), and tokens used in similar ways ended up with similar rows. For example, the rows most similar to the row for Monday are the rows for the other six days of the week.
 
 A token's row says which token it is, but not where it sits in the prompt. Later steps mix the rows together without looking at where they came from, so GPT-2 also adds a row for each token's position. A token's [embedding](https://en.wikipedia.org/wiki/Word_embedding) is the sum of these two rows, added number by number. Both rows come from tables in GPT-2's [weights](https://developers.google.com/machine-learning/glossary#weight):
