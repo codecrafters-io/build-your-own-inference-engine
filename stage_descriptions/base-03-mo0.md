@@ -1,210 +1,190 @@
-In this stage, you'll implement the `attn` command to mix each token's row with
-itself and the rows before it.
+In this stage, you'll implement the `attn` command to mix each token's row with the rows before it.
 
-### Why attention?
+### Attention
 
-After embedding, the row for a token is only that token. For example, take the
-sentence "The capital of France is". The row for "is" does not yet depend on
-"France", so nothing in it says which capital comes next.
+In earlier stages, you turned each token of a prompt into an [embedding](https://en.wikipedia.org/wiki/Word_embedding), a row of numbers that describes the token and its position. Each row only describes its own token. For example, in "The capital of France is", the row for "is" says nothing about "France", so nothing in it hints at what comes next.
 
-Attention fixes this by replacing each row with a weighted average of itself and
-the rows before it. Later words don't exist yet when GPT-2 writes a word. For
-example, in one of its later steps, GPT-2 gives the row for "is" these weights:
+[Attention](https://en.wikipedia.org/wiki/Attention_(machine_learning)) is the step that lets a row take in information from other rows. It replaces each row with a new one, built from a weighted mix of itself and the rows before it. GPT-2 runs attention 12 times, one after another, in 12 layers.
 
-| Word | Weight |
+For example, when one of GPT-2's later layers builds the new row for "is", it gives the rows of the prompt these shares, called attention weights:
+
+| Token | Attention weight |
 | --- | --- |
-| "The" | 0.35 |
-| "capital" | 0.02 |
-| "of" | 0.01 |
-| "France" | 0.57 |
-| "is" | 0.06 |
+| "The" | 0.347 |
+| "capital" | 0.017 |
+| "of" | 0.007 |
+| "France" | 0.571 |
+| "is" | 0.058 |
 
-More than half of the new row for "is" comes from "France". GPT-2 often parks
-weight it doesn't need on the first word, which is the 0.35 on "The".
+More than half of the mix comes from "France".
 
-### Where the weights come from
+Despite the name, attention weights aren't among the [weights](https://developers.google.com/machine-learning/glossary#weight) GPT-2 learned in training, so they're not in the weights file. GPT-2 computes them for each prompt, from the rows themselves.
 
-Attention turns every row into three lists of numbers. The query is the question
-the row asks, the key is what the row says about itself, and the value is what
-the row passes on when it matches. The row for "is" might ask "which earlier
-word names a place?", and the row for "France" might answer "I name a place."
+A row only mixes in itself and the rows before it, never the rows after it, even when they're there. GPT-2 writes text one token at a time, from left to right, so it learned to predict each token from the tokens before it. Attention that only looks back like this is called causal attention.
 
-A score is how well one row's key answers another row's query, and it comes from
-the dot product of the two, so the pair above scores highly.
-[Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/)
-then turns a row's scores into weights that add up to 1, by raising `e` to each
-score and dividing by their total. A score that leads by 2 gets about 7 times
-the weight.
+### Queries, Keys, and Values
 
-GPT-2 asks 12 questions at once. It splits each row into 12 slices, called
-heads, and each head runs its own weighted average on its slice. The weights for
-"is" above came from one head.
+To compute the attention weights, attention turns each row into three new lists of numbers:
 
-### The `attn` command
+- The query, which describes what this row is looking for in earlier rows
+- The key, which describes what this row offers to later rows
+- The value, which is what this row passes on to the rows that pick it
 
-`attn` takes three files and a layer number. In this stage's example:
+For example, the row for "is" might look for "an earlier word that names a place", and the row for "France" might offer "a word that names a place". The two match, so the new row for "is" takes a large share of the value of "France".
 
-- `config.json` is a JSON object of sizes, using the same names as
-  [GPT-2's config](https://huggingface.co/gpt2/blob/main/config.json):
+GPT-2 computes all three from the row in two steps. First, it multiplies the row by a [tensor](https://app.codecrafters.io/concepts/tensors) of weights called `c_attn.weight`, as the next section explains. Then it adds a [bias](https://developers.google.com/machine-learning/glossary#bias-math-or-bias-term) called `c_attn.bias`, a list of numbers that's added number by number. Each layer has its own copy of both, like `h.0.attn.c_attn.weight` for layer 0.
 
-    ```json
-    { "n_embd": 1, "n_head": 1, "n_layer": 1, "n_positions": 4, "vocab_size": 2 }
-    ```
+### Matrix Multiplication
 
-- `model.safetensors` holds four weight tables per layer, named with `h.` and
-  the layer number. For layer 0:
-    - `h.0.attn.c_attn.weight`, with shape `[n_embd, 3 * n_embd]`
-    - `h.0.attn.c_attn.bias`, with shape `[3 * n_embd]`
-    - `h.0.attn.c_proj.weight`, with shape `[n_embd, n_embd]`
-    - `h.0.attn.c_proj.bias`, with shape `[n_embd]`
-- The layer number is the layer to run: `0`. The file holds every layer's
-  weights, and `attn` runs one of them.
-- `input.json` is a JSON array of the rows to mix, one row per position:
-  `[[1], [2]]`.
+Multiplying a row of `n` numbers by a tensor with shape `[n, m]` is called [matrix multiplication](https://en.wikipedia.org/wiki/Matrix_multiplication), and it gives a new row of `m` numbers. Number `j` of the new row is the [dot product](https://en.wikipedia.org/wiki/Dot_product) of the row and column `j` of the tensor: multiply the numbers in matching positions, then add up the products.
 
-Multiplying a row by a weight means
-[multiplying matrices](https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:matrices/x9e81a4f98389efdf:multiplying-matrices-by-matrices/a/multiplying-matrices):
-a row of `n` numbers times a weight of shape `[n, m]` gives `m` numbers, where
-number `j` is the dot product of the row with column `j`.
-
-`attn` turns each input row into an output row of the same length. With one
-head, compute each position's output row like this:
-
-1. Multiply the position's row by `c_attn.weight` and add `c_attn.bias`. Split
-   the result into three equal parts: the query, the key, and the value.
-2. Score the position against itself and every earlier position. A score is the
-   dot product of this position's query with the other position's key, divided
-   by the square root of the head size. The head size is `n_embd / n_head`.
-3. [Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/)
-   the scores into weights.
-4. Add up the scored positions' values, each multiplied by its weight.
-5. Multiply that sum by `c_proj.weight` and add `c_proj.bias`.
-
-### One head, step by step
-
-This example has one head of size 1, and the input is `[[1], [2]]`. Each step's
-result is shown under its number:
+For example, here's the row `[1, 2]` multiplied by a tensor with shape `[2, 3]`:
 
 ```text
-// 1. row × c_attn.weight [[1, 1, 1]] + c_attn.bias [0, 0, 0]
-position 0    query 1   key 1   value 1
-position 1    query 2   key 2   value 2
+tensor        column 0   column 1   column 2
+row 0             1          0          2
+row 1             3          1          0
 
-// 2. query · key / sqrt(1), skipping later positions
-position 0    1*1 = 1
-position 1    2*1 = 2,  2*2 = 4
+[1, 2] × tensor = [1×1 + 2×3,  1×0 + 2×1,  1×2 + 2×0]
+                = [7, 2, 2]
+```
+
+The starter code's loader gives you this tensor as the flat list `[1, 0, 2, 3, 1, 0]`. The number in row `i`, column `j` is at index `i * m + j`. For example, row 1, column 0 is at index `1 * 3 + 0 = 3`.
+
+In GPT-2, the row for "is" becomes its query, key, and value like this:
+
+```text
+row for "is"         768 numbers
+× c_attn.weight      shape [768, 2304]
++ c_attn.bias        2304 numbers
+= 2304 numbers       [ query: 768 numbers | key: 768 numbers | value: 768 numbers ]
+```
+
+### Heads
+
+GPT-2 doesn't compute just one set of attention weights for each row. It splits the query, the key, and the value into 12 slices of 64 numbers, and runs the rest of attention on each set of slices separately, side by side. Each of these is called a head, so each of GPT-2's 12 layers has 12 heads. Each head computes its own attention weights, so it can look for something different:
+
+```text
+query for "is"   [ numbers 0–63 | numbers 64–127 | ... | numbers 704–767 ]
+                      head 0          head 1                 head 11
+```
+
+The key and the value are split the same way. Inside a head, the query, the key, and the value mean just the head's slices of them. The length of a slice, 64 in GPT-2, is called the head size.
+
+### Scores and Softmax
+
+To decide how much of each row to mix in, a head gives each row a score: the dot product of the current row's query and that row's key, divided by the square root of the head size. Dividing keeps the scores small, since longer slices give larger dot products. GPT-2's head size is 64, so it divides by 8.
+
+[Softmax](https://en.wikipedia.org/wiki/Softmax_function) then turns the head's scores into attention weights. It raises `e` to the power of each score (`exp` in most languages) and divides each result by their total, so the attention weights are all positive and add up to 1. For example, softmax turns the scores `[0, 0]` into the attention weights `[0.5, 0.5]`, and `[0, 1]` into `[0.27, 0.73]`.
+
+The head then adds up the values of those rows, number by number, each multiplied by its attention weight. The result is as long as one slice.
+
+The table at the start of this stage came from head 8 in layer 9. Here's how that head scores the rows of the prompt when it builds the new row for "is":
+
+```text
+                  "The"   "capital"    "of"    "France"    "is"
+dot product      12.152    -12.048   -18.772    16.132   -2.105
+÷ 8 = score       1.519     -1.506    -2.346     2.017   -0.263
+softmax           0.347      0.017     0.007     0.571    0.058
+```
+
+"France" has the highest score, so it gets the biggest attention weight.
+
+Once every head is done, their results go side by side, in order, to make one row of 768 numbers. Last, attention multiplies that row by one more tensor, `c_proj.weight`, and adds `c_proj.bias`, which mixes the heads' results together. The result is the token's new row.
+
+### The `attn` Command
+
+`attn` runs the attention of one layer. It takes four arguments:
+
+1. `model.safetensors`, a weights file with the attention tensors of every layer
+2. `config.json`, a JSON object of sizes, like `{"n_embd": 768, "n_head": 12, ...}`
+3. A layer number, like `0`. `attn` runs only that layer's attention.
+4. `input.json`, a JSON array of rows, one for each position, like `[[1], [0]]`
+
+`n_embd` is how many numbers each row has, and `n_head` is the number of heads, so the head size is `n_embd / n_head`. These are the names [GPT-2's own config](https://huggingface.co/openai-community/gpt2/blob/main/config.json) uses, and you only need these two fields for now.
+
+Each layer has its own four attention tensors, whose names start with `h.` and the layer number. For layer 0, they're:
+
+| Tensor | Shape |
+| --- | --- |
+| `h.0.attn.c_attn.weight` | `[n_embd, 3 * n_embd]` |
+| `h.0.attn.c_attn.bias` | `[3 * n_embd]` |
+| `h.0.attn.c_proj.weight` | `[n_embd, n_embd]` |
+| `h.0.attn.c_proj.bias` | `[n_embd]` |
+
+`attn` prints a JSON array of new rows, one for each input row, each with `n_embd` numbers. Your program must:
+
+1. Multiply every row by `c_attn.weight`, add `c_attn.bias`, and split the result into the row's query, key, and value
+
+Then, for the row at each position `i`, in each head, using the head's slices:
+
+2. Score position `i` against itself and each earlier position: the dot product of `i`'s query and that position's key, divided by the square root of the head size
+3. Softmax the scores into attention weights
+4. Add up the values of those positions, number by number, each multiplied by its attention weight
+
+Finally, for each position:
+
+5. Put the heads' results side by side, in order, multiply by `c_proj.weight`, and add `c_proj.bias`
+
+For example, say each row is one number, so `n_embd` and `n_head` are both `1`, and the input is `[[1], [0]]`. The tensors are:
+
+- `c_attn.weight` is `[[2, 1, 3]]`, so the query is 2 times the row, the key is 1 times the row, and the value is 3 times the row
+- `c_attn.bias` is `[0, 0, 1]`, which adds 1 to the value
+- `c_proj.weight` is `[[2]]`, and `c_proj.bias` is `[1]`
+
+Here are the steps, with each one's results under its number:
+
+```text
+// 1. row × c_attn.weight + c_attn.bias
+position 0    [1] → query 2, key 1, value 3 + 1 = 4
+position 1    [0] → query 0, key 0, value 0 + 1 = 1
+
+// 2. dot product of query and key, ÷ √1, for itself and earlier positions
+position 0    2 × 1 = 2
+position 1    0 × 1 = 0,  0 × 0 = 0
 
 // 3. softmax
-position 0    [1]                  // a single score always gets weight 1
-position 1    [0.119, 0.881]
+position 0    [1]           // a single score always gets weight 1
+position 1    [0.5, 0.5]    // equal scores get equal weights
 
-// 4. weighted average of the values
-position 0    1 * 1 = 1
-position 1    0.119 * 1 + 0.881 * 2 = 1.881
+// 4. the values, each times its attention weight, added up
+position 0    1 × 4 = 4
+position 1    0.5 × 4 + 0.5 × 1 = 2.5
 
-// 5. × c_proj.weight [[1]] + c_proj.bias [0] leaves both unchanged
-output        [[1], [1.881]]
+// 5. × c_proj.weight + c_proj.bias
+position 0    4 × 2 + 1 = 9
+position 1    2.5 × 2 + 1 = 6
 ```
 
-Print one JSON array of rows:
+So `attn` prints `[[9.0], [6.0]]`.
 
-```json
-[[1.0], [1.8807970779778822]]
-```
-
-### More than one head
-
-With `n_head` heads, split the query, the key, and the value into `n_head` equal
-slices. Run steps 2 to 4 on each slice separately, then put the results side by
-side, in order, before step 5.
-
-With `n_embd` 2 and 2 heads, each head gets one number. Take the input
-`[[1, 0], [0, 1]]`, with weights that copy each row into its query, key, and
-value. Here is position 1:
+With two heads, say `n_embd` and `n_head` are both `2`, so each head gets one number. The input is `[[1, 0], [0, 1]]`. To keep it short, say `c_attn` copies each row into its query, key, and value unchanged, and `c_proj` leaves the result as it is. Here's position 1:
 
 ```text
-head 0, number 0    scores  0*1 = 0,  0*0 = 0    weights  [0.5, 0.5]
-                    value   0.5 * 1 + 0.5 * 0 = 0.5
-head 1, number 1    scores  1*0 = 0,  1*1 = 1    weights  [0.269, 0.731]
-                    value   0.269 * 0 + 0.731 * 1 = 0.731
+head 0 (number 0)   scores   0 × 1 = 0,  0 × 0 = 0     weights  [0.5, 0.5]
+                    value    0.5 × 1 + 0.5 × 0 = 0.5
+head 1 (number 1)   scores   1 × 0 = 0,  1 × 1 = 1     weights  [0.269, 0.731]
+                    value    0.269 × 0 + 0.731 × 1 = 0.731
 side by side        [0.5, 0.731]
 ```
 
-With one head of size 2 the same rows give `[0.330, 0.670]`, because the softmax
-then runs once over the whole row.
-
-### Hints
-
-<details>
-<summary>What does the whole algorithm look like as pseudocode?</summary>
-
-```text
-// input[i] is the row at position i of input.json, counting from 0
-
-size = n_embd / n_head                // numbers per head
-
-for each position i:
-    // 1. query, key, and value, n_embd numbers each
-    qkv = input[i] × c_attn.weight + c_attn.bias
-    q[i] = qkv[0 : n_embd]
-    k[i] = qkv[n_embd : 2 * n_embd]
-    v[i] = qkv[2 * n_embd : 3 * n_embd]
-
-for each position i:
-    for each head h:
-        a, b = h * size, (h + 1) * size   // this head's slice
-        for each position j from 0 to i:  // itself and earlier only
-            // 2. how well j's key answers i's query
-            score[j] = dot(q[i][a : b], k[j][a : b]) / sqrt(size)
-        // 3. scores to weights that add up to 1
-        weight = softmax(score[0], ..., score[i])
-        // 4. the weighted average of the values
-        out[i][a : b] = sum over j of weight[j] * v[j][a : b]
-    // 5. mix the heads back together
-    result[i] = out[i] × c_proj.weight + c_proj.bias
-```
-
-</details>
-
-<details>
-<summary>Why divide the scores by the square root of the head size?</summary>
-
-A dot product adds one product per number, so wider heads give larger scores.
-Large scores make the softmax put almost all the weight on one position.
-Dividing by the square root of the head size keeps the scores in the same range
-whatever the width. GPT-2's heads have 64 numbers, so it divides by 8.
-
-</details>
-
 ### Tests
 
-The tester will write the three files from the example, then execute your
-program like this:
+The tester will write a `model.safetensors`, a `config.json`, and an `input.json`, then execute your program like this:
 
 ```bash
 $ ./your_program.sh attn model.safetensors config.json 0 input.json
 ```
 
-Your program must print:
+The tester will verify that:
 
-```json
-[[1.0], [1.8807970779778822]]
-```
+- Your program prints only a JSON array to stdout, with one row for each row in `input.json`
+- Each row has `n_embd` numbers
+- Each number matches the attention output for that position, to within 0.0001
 
-The tester allows a difference of 0.0001 on each number. It will also run a head
-of size 2, where forgetting the division changes the second row, a model with
-two heads, and layer 1.
+The tester reads your output as JSON numbers, so `9` and `9.0` both match. It will run a few different files, including one with two heads and one that asks for layer 1 of a two-layer file.
 
 ### Notes
 
-- With GPT-2's real weights, scores can be large enough that raising `e` to them
-  overflows. Subtract the largest score from every score first. The weights come
-  out the same, because softmax only depends on the differences between scores.
-- To go deeper on attention, 3Blue1Brown's
-  [Attention in transformers](https://www.3blue1brown.com/lessons/attention)
-  animates every step, and
-  [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
-  walks through the same vectors in writing.
-- To see attention on your own sentences, the
-  [Transformer Explainer](https://poloclub.github.io/transformer-explainer/)
-  runs GPT-2 in the browser and draws each head's weights.
+- Steps 1 and 5 both multiply a row by a tensor, and later stages do it again, so it's worth writing as its own function.
+- To see attention on your own sentences, the [Transformer Explainer](https://poloclub.github.io/transformer-explainer/) runs GPT-2 in your browser and draws each head's attention weights.
