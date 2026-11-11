@@ -6,12 +6,19 @@ GPT-2 doesn't work on text directly. It works on tokens, which are words or piec
 
 GPT-2 does all its work with arithmetic, so it needs numbers that describe each token. An id can't do that. It's only a label, like a locker number: it tells you which token it is, but nothing about it. So GPT-2 swaps each id for a row of 768 numbers that describe the token, and all of its later steps do their arithmetic on these rows. 768 is just the size GPT-2 uses, and bigger versions of GPT-2 use longer rows.
 
-GPT-2 keeps these rows in a table called `wte.weight`, with one row for each of its 50,257 tokens:
+GPT-2 keeps these rows in a table called `wte.weight`, with one row for each of its 50,257 tokens. Here are the rows for the tokens of "The capital of France is", with the first 4 of their 768 numbers, rounded:
 
 ```text
 wte.weight     768 columns →
-row 0          [ ... 768 numbers ... ]               ← token 0
-row 1          [ ... ]
+row 0          [ ... ]
+...
+row 286        [-0.06,  0.02,  0.03,  0.04, ... ]    ← "of"
+...
+row 318        [-0.01,  0.01,  0.06, -0.11, ... ]    ← "is"
+...
+row 464        [-0.07, -0.02,  0.06, -0.06, ... ]    ← "The"
+...
+row 3139       [ 0.06, -0.01,  0.09,  0.06, ... ]    ← "capital"
 ...
 row 4881       [-0.07,  0.05,  0.16, -0.07, ... ]    ← "France"
 ...
