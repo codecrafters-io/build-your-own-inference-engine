@@ -1,80 +1,59 @@
-In this stage, you'll reuse past keys and values in `generate` instead of
-recomputing the whole sequence.
+In this stage, you'll make `generate` keep each token's keys and values, instead of recomputing the whole sequence for every new token.
 
-### Why keep keys and values?
+### The KV Cache
 
-A new token needs its own query, key, and value. The keys and values of the
-tokens already written do not change, so they can be kept and reused. Scoring a
-new token by running every earlier token through all of GPT-2's 12 layers again
-repeats that work. Keeping the keys and values makes the new ids come out the
-same, with less arithmetic. This is called a KV cache, short for key-value
-cache.
+So far, `generate` runs the whole sequence through every layer for each new token. But attention only lets a row look back, so adding a new token never changes the keys and values of the tokens before it. They can be kept and reused. Only the new token needs its own query, key, and value. This is called a [KV cache](https://en.wikipedia.org/wiki/Attention_(machine_learning)#KV_cache), short for key-value cache.
 
-For "The capital of France is" and six new tokens, greedy decoding runs
-5 + 6 + 7 + 8 + 9 + 10 = 45 rows through each layer. Keeping the keys and values
-runs 10: the 5 prompt rows once, then one row for each new token except the
-last, since the last one is never fed back in. That saving matters when you run
-GPT-2's real weights later, where an engine that recomputes the whole sequence
-at every step can run out of time.
-
-### The `generate` command
-
-The command is the same one as greedy decoding. `tokens.json` again holds a
-count, and there is no temperature. The ids must match a run that recomputes the
-whole sequence at every step.
-
-A key and a value are the lists of numbers from step 1 of attention, after
-`c_attn` and split into heads. Keep them in a list for each layer and each head:
+For example, for "The capital of France is" and six new tokens, recomputing runs 5 + 6 + 7 + 8 + 9 + 10 = 45 rows through each layer. With a KV cache, it runs only 10:
 
 ```text
-keys[layer][head], values[layer][head] = empty lists
-
-rows = the prompt's embeddings
-run the blocks on rows, appending each row's key and value to the lists
-
-repeat count times:
-    pick the next id from the last row's logits
-    if that was the last new id, stop
-    row = the embedding of that id, at its position in the whole sequence
-    for each layer:
-        run the block on this one row
-        // inside attention, for each head:
-        append the row's key and value to keys[layer][head], values[layer][head]
-        score the row's query against every key in keys[layer][head]
+                             rows run through each layer   keys in each layer's cache
+the prompt                   5                             5
+after picking " the"         1                             6
+after picking " capital"     1                             7
+after picking " of"          1                             8
+after picking " the"         1                             9
+after picking " French"      1                             10
+after picking " Republic"    none, it's the last token     10
 ```
 
-The softmax and the output projection are unchanged. The layer norms and the MLP
-work on one row at a time, so they only need the new row.
+The last new token is never fed back in, so it doesn't need a row.
 
-In this example `ids.json` is `[0, 1, 0]` and `tokens.json` is
-`{ "count": 3 }`. The model has two tokens, and the rows of `wpe.weight` differ
-from each other, so a new token embedded at the wrong position changes what
-comes out. The ids are:
+That saving matters when you run GPT-2's real weights in a later stage.{{#lang_is_python}} There, a Python engine took about 90 seconds on the test servers with a KV cache, and ran past their 300-second limit without one.{{/lang_is_python}}
 
-```json
-[0, 1, 1]
-```
+### Running One Row
+
+With a KV cache, each layer keeps a list of the keys and a list of the values it has computed so far. To add a new token, your engine runs just its row through each layer's block:
+
+- In attention, the row's key and value are appended to the layer's lists. Then the row's query is scored against every key in the list, with each head using its own slices as before.
+- Layer norm and the MLP work on one row at a time anyway, so they only need the new row.
+
+The new token's row is its embedding at its position in the whole sequence. The cache doesn't change which row of `wpe.weight` you add.
+
+### The `generate` Command
+
+The command and its files are the same as before. The ids it prints must be the same as without a cache. Your program must:
+
+1. Run all of the prompt's rows through every layer's block, from layer 0 to the last, appending each row's key and value to that layer's lists
+2. Pick the next id from the logits of the last row
+3. If that wasn't the last new id, embed it at its position in the whole sequence, run just that row through the blocks of every layer, and go back to step 2
 
 ### Tests
 
-The tester will write the four files and execute your program like this:
+The tester will write a `model.safetensors`, a `config.json`, an `ids.json`, and a `tokens.json`, then execute your program like this:
 
 ```bash
 $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 ```
 
-Your program must print:
+The tester will verify that:
 
-```json
-[0, 1, 1]
-```
+- Your program prints only a JSON array to stdout, with `count` ids
+- Each id is the one greedy decoding picks at that step
 
-The ids have to match exactly. The tester will also run a two-id prompt, where
-embedding each new token at position 0 instead of at its index in the whole
-sequence changes the ids.
+It will run a few different prompts. Their files have different rows in `wpe.weight` for each position, so embedding a new token at the wrong position changes the ids.
 
 ### Notes
 
-- The new token's position is still its index in the whole sequence. The cache
-  does not change the position row you add.
-- A prompt is cached in order, left to right, before the first new token.
+- The tester can only see your ids, so a program without a KV cache passes this stage too.{{#lang_is_python}} You'll need the cache when your engine runs GPT-2's real weights, since a Python engine without one runs out of time.{{/lang_is_python}}{{^lang_is_python}} The cache makes your engine several times faster when it runs GPT-2's real weights.{{/lang_is_python}}
+- A layer's cache holds the keys and values of every head. If you keep them as full rows, take each head's slices out of them, the same way as for the query.
