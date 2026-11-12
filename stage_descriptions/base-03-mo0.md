@@ -36,7 +36,7 @@ GPT-2 computes all three from the row in two steps. First, it multiplies the row
 
 ### Matrix Multiplication
 
-Multiplying a row of `n` numbers by a tensor with shape `[n, m]` is called [matrix multiplication](https://en.wikipedia.org/wiki/Matrix_multiplication), and it gives a new row of `m` numbers. Number `j` of the new row is the [dot product](https://en.wikipedia.org/wiki/Dot_product) of the row and column `j` of the tensor: multiply the numbers in matching positions, then add up the products.
+Multiplying a row of `n` numbers by a tensor with shape `[n, m]` is called [matrix multiplication](https://www.khanacademy.org/math/precalculus/x9e81a4f98389efdf:matrices/x9e81a4f98389efdf:multiplying-matrices-by-matrices/a/multiplying-matrices), and it gives a new row of `m` numbers. Number `j` of the new row is the [dot product](https://en.wikipedia.org/wiki/Dot_product) of the row and column `j` of the tensor: multiply the numbers in matching positions, then add up the products.
 
 For example, here's the row `[1, 2]` multiplied by a tensor with shape `[2, 3]`:
 
@@ -75,7 +75,7 @@ The key and the value are split the same way. Inside a head, the query, the key,
 
 To decide how much of each row to mix in, a head gives each row a score: the dot product of the current row's query and that row's key, divided by the square root of the head size. Dividing keeps the scores small, since longer slices give larger dot products. GPT-2's head size is 64, so it divides by 8.
 
-[Softmax](https://en.wikipedia.org/wiki/Softmax_function) then turns the head's scores into attention weights. It raises `e` to the power of each score (`exp` in most languages) and divides each result by their total, so the attention weights are all positive and add up to 1. For example, softmax turns the scores `[0, 0]` into the attention weights `[0.5, 0.5]`, and `[0, 1]` into `[0.27, 0.73]`.
+[Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/) then turns the head's scores into attention weights. It raises `e` to the power of each score (`exp` in most languages) and divides each result by their total, so the attention weights are all positive and add up to 1. For example, softmax turns the scores `[0, 0]` into the attention weights `[0.5, 0.5]`, and `[0, 1]` into `[0.27, 0.73]`.
 
 The head then adds up the values of those rows, number by number, each multiplied by its attention weight. The result is as long as one slice.
 

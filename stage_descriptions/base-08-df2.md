@@ -2,7 +2,7 @@ In this stage, you'll add sampling to `generate`, to pick each new token at rand
 
 ### Sampling
 
-Greedy decoding always picks the same token for the same ids, so a prompt can only ever continue one way. Sampling picks the next token at random instead, weighted by its probability, so the same prompt can continue differently each time. The probabilities come from the logits through [softmax](https://en.wikipedia.org/wiki/Softmax_function), the same function attention uses.
+Greedy decoding always picks the same token for the same ids, so a prompt can only ever continue one way. Sampling picks the next token at random instead, weighted by its probability, so the same prompt can continue differently each time. The probabilities come from the logits through [softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/), the same function attention uses.
 
 Two settings change the probabilities before the pick:
 
