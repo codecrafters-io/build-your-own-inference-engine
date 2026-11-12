@@ -1,14 +1,10 @@
-In this stage, you'll implement the `generate` command to repeatedly take the
-highest-scoring token.
+In this stage, you'll implement the `generate` command to write new tokens, always picking the one with the highest logit.
 
-### Why greedy?
+### Greedy Decoding
 
-Logits score every possible next token, but writing text means choosing one.
-Greedy decoding is the simplest choice. It takes the highest score, appends that
-token, and scores the longer sequence again. It uses no randomness, so the same
-prompt always continues the same way, and you can check every id it writes.
+`logits` scores every token as the next one, but writing text means choosing one. The simplest choice is the token with the highest logit. GPT-2 then appends that token to the prompt, scores the longer prompt again, and picks the highest again, one token at a time. This is called greedy decoding. It uses no randomness, so the same prompt always continues the same way.
 
-Here is GPT-2 continuing "The capital of France is", one step at a time:
+For example, here's GPT-2 continuing "The capital of France is", one step at a time. The lead is how much higher the picked token's logit is than the runner-up's:
 
 | Step | Picked | Runner-up | Lead |
 | --- | --- | --- | --- |
@@ -19,66 +15,36 @@ Here is GPT-2 continuing "The capital of France is", one step at a time:
 | 5 | " French" | " Republic" | 0.96 |
 | 6 | " Republic" | " Empire" | 1.32 |
 
-At step 4, a lead of 0.33 is all that separates " the capital of the French
-Republic" from " the capital of France".
+At step 4, a lead of 0.33 is all that separates " the capital of the French Republic" from " the capital of France". The six picked ids are `[262, 3139, 286, 262, 4141, 2066]`.
 
-### The `generate` command
+### The `generate` Command
 
-`config.json` and `ids.json` are the same format as for `logits`.
-`tokens.json` is a JSON object. In this stage it holds the count:
+`generate` takes four arguments:
 
-```json
-{ "count": 2 }
-```
+1. `model.safetensors`, the same weights file as for `logits`
+2. `config.json`, the same format as for `logits`
+3. `ids.json`, the prompt's token ids
+4. `tokens.json`, a JSON object that says how many new tokens to write, like `{"count": 2}`
 
-Generate the new ids like this:
+It prints the new ids as a JSON array, without the prompt's ids. Your program must repeat these steps `count` times:
 
-```text
-repeat count times:
-    scores = the logits for ids, as logits computes them
-    best = the id with the highest score, the lower id on a tie
-    append best to ids, and to the new ids
-print the new ids as a JSON array
-```
+1. Compute the logits for the ids, the same way `logits` does
+2. Pick the id with the highest logit. If several ids tie for the highest, pick the lowest of them
+3. Append the picked id to the ids, so the next step's logits take it into account
 
-In this example `ln_f.bias` is `[0, 1]` and `ln_f.weight` is `[0, 0]`, so the
-normalized last row is always `[0, 1]`. Against the token rows `[1, 0]` and
-`[0, 1]`, token 0's score is 0 and token 1's score is 1. Both new tokens are
-token 1:
-
-```json
-[1, 1]
-```
-
-### Hints
-
-<details>
-<summary>How do I keep the lower id on a tie?</summary>
-
-Go through the ids from 0 upward, and replace the best id only when a score is
-strictly greater than the best so far. An equal score then keeps the earlier,
-lower id.
-
-</details>
+For example, if a step's logits are `[2, 5, 5, 1]`, ids 1 and 2 tie for the highest, so the step picks id 1.
 
 ### Tests
 
-The tester will write the four files and execute your program like this:
+The tester will write a `model.safetensors`, a `config.json`, an `ids.json`, and a `tokens.json`, then execute your program like this:
 
 ```bash
 $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 ```
 
-Your program must print:
+The tester will verify that:
 
-```json
-[1, 1]
-```
+- Your program prints only a JSON array to stdout, with `count` ids
+- Each id is the one greedy decoding picks at that step
 
-The ids have to match exactly. The tester will also run a file where every token
-has the same score.
-
-### Notes
-
-- The new token's position is its index in the whole sequence. A prompt of
-  length 3 puts the first new token at position 3.
+It will also run a file where every token has the same logit, so every step is a tie.
