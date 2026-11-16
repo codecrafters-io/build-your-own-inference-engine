@@ -22,9 +22,13 @@ Temperature, then softmax, then sort by probability with ties broken by the lowe
 
 ## What the tester runs today
 
-Stages 2 through 8 run on hand-sized files so the first case of each stage can be checked by hand.
+Every stage before the last runs its worked example first, on a hand-sized file, so the first case can be checked by hand. Stages from "Embed tokens" on then run models whose weights are random numbers between -1 and 1. The tester's oracle can run with one named bug switched on, and a random model is only used once every bug the stage should catch changes the answer, so a broken engine fails in the stage that introduces the bug. A wrong output is compared with what each bug prints, and the hint names the step.
 
-Stage 9 (`zr7`) runs the learner's `generate` on the published 124M file. The tester reads it from `CODECRAFTERS_GPT2_WEIGHTS_PATH`, or downloads it from a public URL in the test runners' region to `$TMPDIR/codecrafters-gpt2/` on the container's disk, streaming rather than holding it in memory, and keeps it only if its size and SHA-256 match. It then links the file into the working directory. A later run in the same pod reuses the file, and a new pod downloads it again in 5 to 15 seconds. No other stage downloads it.
+Attention is two stages. "Causal attention" (`mo0`) runs one head, so `n_head` is always 1 there. "Multi-head attention" (`bx7`) splits the row into heads, and a one-head engine fails every case in it.
+
+The attention weights the two stages quote for "is" in "The capital of France is" are GPT-2's own, from layer 9 counting from 0: head 8 gives `0.347 0.017 0.007 0.571 0.058`, and head 0 gives `0.633 0.236 0.014 0.047 0.069`.
+
+The last stage (`zr7`) runs the learner's `generate` on the published 124M file. The tester reads it from `CODECRAFTERS_GPT2_WEIGHTS_PATH`, or downloads it from a public URL in the test runners' region to `$TMPDIR/codecrafters-gpt2/` on the container's disk, streaming rather than holding it in memory, and keeps it only if its size and SHA-256 match. It then links the file into the working directory. A later run in the same pod reuses the file, and a new pod downloads it again in 5 to 15 seconds. No other stage downloads it.
 
 - The prompt is "The capital of France is", ids `[464, 3139, 286, 4881, 318]`. GPT-2's greedy continuation is " the capital of the French Republic", ids `[262, 3139, 286, 262, 4141, 2066]`, and the tester requires those six exactly.
 - The stage stops at six tokens because each of those steps has a gap of at least 0.33 between the top two logits. The seventh step's gap is 0.007, small enough for a float32 engine and a float64 engine to disagree.

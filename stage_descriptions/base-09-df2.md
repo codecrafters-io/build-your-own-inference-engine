@@ -81,3 +81,7 @@ has a `top_p` below 1, and the other has a temperature other than 1.
 ### Notes
 
 - `top_p` of 1 keeps every token that has a probability above 0.
+- GPT-2's logits are all near -100. In 32-bit floats, raising `e` to a number
+  that low gives 0, and the softmax then divides 0 by 0. Subtract the largest
+  logit from every logit first. The probabilities come out the same, because
+  softmax only depends on the differences between logits.

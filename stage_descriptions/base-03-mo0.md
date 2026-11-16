@@ -29,16 +29,18 @@ the row asks, the key is what the row says about itself, and the value is what
 the row passes on when it matches. The row for "is" might ask "which earlier
 word names a place?", and the row for "France" might answer "I name a place."
 
-A score is how well one row's key answers another row's query, and it comes from
-the dot product of the two, so the pair above scores highly.
+A score is how well one row's key answers another row's query. It is the dot
+product of the two: multiply them number by number, and add up the products. The
+pair above scores highly.
 [Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/)
 then turns a row's scores into weights that add up to 1, by raising `e` to each
 score and dividing by their total. A score that leads by 2 gets about 7 times
 the weight.
 
-GPT-2 asks 12 questions at once. It splits each row into 12 slices, called
-heads, and each head runs its own weighted average on its slice. The weights for
-"is" above came from one head.
+A query, a key, and a value, with the weights they give, make up one head.
+GPT-2 runs 12 heads side by side, and the weights for "is" above came from one
+of them. In this stage, `attn` runs a single head. You'll add the others in
+later stages.
 
 ### The `attn` command
 
@@ -67,14 +69,14 @@ Multiplying a row by a weight means
 a row of `n` numbers times a weight of shape `[n, m]` gives `m` numbers, where
 number `j` is the dot product of the row with column `j`.
 
-`attn` turns each input row into an output row of the same length. With one
-head, compute each position's output row like this:
+`attn` turns each input row into an output row of the same length. Compute each
+position's output row like this:
 
 1. Multiply the position's row by `c_attn.weight` and add `c_attn.bias`. Split
    the result into three equal parts: the query, the key, and the value.
 2. Score the position against itself and every earlier position. A score is the
    dot product of this position's query with the other position's key, divided
-   by the square root of the head size. The head size is `n_embd / n_head`.
+   by the square root of `n_embd`, the count of numbers in a query.
 3. [Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/)
    the scores into weights.
 4. Add up the scored positions' values, each multiplied by its weight.
@@ -82,8 +84,9 @@ head, compute each position's output row like this:
 
 ### One head, step by step
 
-This example has one head of size 1, and the input is `[[1], [2]]`. Each step's
-result is shown under its number:
+In this example `n_embd` is 1, so every row, query, key, and value is a single
+number, and the input is `[[1], [2]]`. Each step's result is shown under its
+number:
 
 ```text
 // 1. row × c_attn.weight [[1, 1, 1]] + c_attn.bias [0, 0, 0]
@@ -112,27 +115,6 @@ Print one JSON array of rows:
 [[1.0], [1.8807970779778822]]
 ```
 
-### More than one head
-
-With `n_head` heads, split the query, the key, and the value into `n_head` equal
-slices. Run steps 2 to 4 on each slice separately, then put the results side by
-side, in order, before step 5.
-
-With `n_embd` 2 and 2 heads, each head gets one number. Take the input
-`[[1, 0], [0, 1]]`, with weights that copy each row into its query, key, and
-value. Here is position 1:
-
-```text
-head 0, number 0    scores  0*1 = 0,  0*0 = 0    weights  [0.5, 0.5]
-                    value   0.5 * 1 + 0.5 * 0 = 0.5
-head 1, number 1    scores  1*0 = 0,  1*1 = 1    weights  [0.269, 0.731]
-                    value   0.269 * 0 + 0.731 * 1 = 0.731
-side by side        [0.5, 0.731]
-```
-
-With one head of size 2 the same rows give `[0.330, 0.670]`, because the softmax
-then runs once over the whole row.
-
 ### Hints
 
 <details>
@@ -140,8 +122,6 @@ then runs once over the whole row.
 
 ```text
 // input[i] is the row at position i of input.json, counting from 0
-
-size = n_embd / n_head                // numbers per head
 
 for each position i:
     // 1. query, key, and value, n_embd numbers each
@@ -151,28 +131,26 @@ for each position i:
     v[i] = qkv[2 * n_embd : 3 * n_embd]
 
 for each position i:
-    for each head h:
-        a, b = h * size, (h + 1) * size   // this head's slice
-        for each position j from 0 to i:  // itself and earlier only
-            // 2. how well j's key answers i's query
-            score[j] = dot(q[i][a : b], k[j][a : b]) / sqrt(size)
-        // 3. scores to weights that add up to 1
-        weight = softmax(score[0], ..., score[i])
-        // 4. the weighted average of the values
-        out[i][a : b] = sum over j of weight[j] * v[j][a : b]
-    // 5. mix the heads back together
+    for each position j from 0 to i:      // itself and earlier only
+        // 2. how well j's key answers i's query
+        score[j] = dot(q[i], k[j]) / sqrt(n_embd)
+    // 3. scores to weights that add up to 1
+    weight = softmax(score[0], ..., score[i])
+    // 4. the weighted average of the values
+    out[i] = sum over j of weight[j] * v[j]
+    // 5. the output projection
     result[i] = out[i] × c_proj.weight + c_proj.bias
 ```
 
 </details>
 
 <details>
-<summary>Why divide the scores by the square root of the head size?</summary>
+<summary>Why divide the scores by the square root of `n_embd`?</summary>
 
-A dot product adds one product per number, so wider heads give larger scores.
+A dot product adds one product per number, so longer queries give larger scores.
 Large scores make the softmax put almost all the weight on one position.
-Dividing by the square root of the head size keeps the scores in the same range
-whatever the width. GPT-2's heads have 64 numbers, so it divides by 8.
+Dividing by the square root of the length keeps the scores in the same range
+whatever the length.
 
 </details>
 
@@ -191,22 +169,16 @@ Your program must print:
 [[1.0], [1.8807970779778822]]
 ```
 
-The tester allows a difference of 0.0001 on each number. It will also run three
+The tester allows a difference of 0.0001 on each number. It will also run two
 models whose weights are random numbers between -1 and 1, with rows of four
-numbers: one with a single head, one with two heads, and one that reads layer 1.
-The numbers change on every run, and the tester's log lists every tensor it
-wrote.
+numbers: one for layer 0, and one that reads layer 1 of a two-layer file. The
+numbers change on every run, and the tester's log lists every tensor it wrote.
+Every `config.json` in this stage has an `n_head` of 1.
 
 ### Notes
 
-- With GPT-2's real weights, scores can be large enough that raising `e` to them
-  overflows. Subtract the largest score from every score first. The weights come
-  out the same, because softmax only depends on the differences between scores.
 - To go deeper on attention, 3Blue1Brown's
   [Attention in transformers](https://www.3blue1brown.com/lessons/attention)
   animates every step, and
   [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/)
   walks through the same vectors in writing.
-- To see attention on your own sentences, the
-  [Transformer Explainer](https://poloclub.github.io/transformer-explainer/)
-  runs GPT-2 in the browser and draws each head's weights.

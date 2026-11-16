@@ -1,5 +1,5 @@
 # Unallocated slugs, in order, for later extension stages:
-# bx7 gw0 vq5 gn7 rv6 ut0 ko9 du4 ok5 ag0
+# gw0 vq5 gn7 rv6 ut0 ko9 du4 ok5 ag0
 
 slug: "inference-engine"
 name: "Build your own Inference Engine"
@@ -47,10 +47,11 @@ marketing:
         At the end, you'll have a GitHub repo to show off.
     - question_markdown: "What exactly will I learn?"
       answer_markdown: |-
-        In the first 9 stages, you'll learn:
+        In the 11 stages, you'll learn:
         * How a safetensors file stores tensor names, shapes, and raw weights
         * How token embeddings and position embeddings add together
         * How causal self-attention mixes earlier tokens into the current one
+        * How splitting each row into heads lets attention weigh earlier tokens in several ways at once
         * How a transformer block combines attention, a feed-forward layer, and residual connections
         * How the last position becomes a score for every token
         * How greedy decoding repeats that computation
@@ -95,6 +96,11 @@ stages:
     difficulty: medium
     marketing_md: |-
       In this stage, you'll implement the `attn` command to mix each token's row with itself and the rows before it.
+  - slug: "bx7"
+    name: "Multi-head attention"
+    difficulty: medium
+    marketing_md: |-
+      In this stage, you'll extend the `attn` command to split each row into slices that each get their own weights.
   - slug: "vb8"
     name: "Residual connections"
     difficulty: medium

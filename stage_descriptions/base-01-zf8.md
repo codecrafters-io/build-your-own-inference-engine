@@ -31,7 +31,7 @@ build.
 | --- | --- | --- |
 | Inspect | Reads every tensor's name, shape, and first numbers. Preparation, not generation | Read safetensors |
 | Embed | Turns each token id into a row of numbers | Embed tokens |
-| Attend | Mixes earlier tokens into the current one | Causal attention, Transformer block |
+| Attend | Mixes earlier tokens into the current one | Causal attention, Multi-head attention, Residual connections, Transformer block |
 | Score | Scores every possible next token | Logits |
 | Pick | Takes the highest score, or samples | Greedy decode, Sample a token |
 | Repeat | Feeds the new token back in, reusing past work | KV cache |
