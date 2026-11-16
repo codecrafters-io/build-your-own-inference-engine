@@ -137,6 +137,3 @@ lists every tensor it wrote.
   tensors themselves as the loader returns them. GPT-2's real weights wouldn't
   fit in the test server's memory as Python floats.
 {{/lang_is_python}}
-- To see GPT-2's real embeddings, download its weights the way your README's
-  "Running GPT-2" section shows, then run `embed` with
-  `[464, 3139, 286, 4881, 318]` in `ids.json`.
