@@ -5,8 +5,9 @@ layer norm and a residual add.
 
 `attn` replaces each row with a weighted average of itself and the rows before
 it, and that throws something away. In the weights you saw when you built
-`attn`, 0.57 of the new row for "is" came from "France" and only 0.06 came from
-"is". The row has taken on the words before it and lost most of what it held.
+`attn`, only 0.06 of the new row for "is" came from "is". The rest came from
+"France" and "The", so the row now says what the sentence is about and has
+nearly forgotten which word it is.
 
 A [transformer](https://www.3blue1brown.com/lessons/gpt) keeps both. GPT-2 is a
 stack of 12 identical blocks, and a block adds attention's output onto the row
@@ -51,18 +52,13 @@ row ─┬─► ln_1 ─► attention ─► + ─► output
 2. Run attention on those copies, the same way `attn` does.
 3. Add the attention output onto the block's input rows, not onto the copies.
 
-Layer norm is one formula. The mean and the variance are taken over the row's
-numbers, and the variance is the average of `(x - mean)^2`:
+Layer norm is one formula, with 0.00001 from GPT-2's own definition. The mean
+and the variance are taken over the row's numbers, and the variance is the
+average of `(x - mean)^2`:
 
 ```text
 layer_norm(x) = (x - mean) / sqrt(variance + 0.00001) * weight + bias
 ```
-
-Copy 0.00001 exactly as written. It's part of GPT-2's definition, and a
-different value changes the output.
-
-The file also holds `ln_2` and the MLP tensors, which later stages use. In this
-stage's files they are all zeros, so you can ignore them for now.
 
 ### One block, step by step
 
@@ -138,7 +134,8 @@ two-layer file.
 
 ### Notes
 
-- The variance divides by the count of numbers in the row, not by one less, as
-  some statistics functions do.
-- Adding onto the normalized copy instead of the row it came from is the common
-  mistake here, and it changes every number in the output.
+- Divide by the count of numbers in the row when you take the variance. Many
+  built-in variance functions divide by one less, which turns 0.25 into 0.5 for
+  the row `[1, 2]` and the output into `[0.29, 2.71]` instead of `[0, 3]`.
+- The file also holds `ln_2` and the MLP tensors, which later stages use. They
+  are all zeros here, so you can ignore them for now.
