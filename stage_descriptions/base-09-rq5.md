@@ -71,7 +71,8 @@ Your program must print:
 
 The ids have to match exactly. The tester will also run a two-id prompt, where
 embedding each new token at position 0 instead of at its index in the whole
-sequence changes the ids.
+sequence changes the ids, and a two-layer model with random weights, where each
+layer needs keys and values of its own.
 
 ### Notes
 

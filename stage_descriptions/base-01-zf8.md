@@ -117,5 +117,5 @@ Your program must print:
 ```
 
 The tester reads your output as JSON, so `[1,0.5]` and `[1.0, 0.5]` both pass.
-It will also run a file whose tensors are not in name order, a file with two
-tensors at different offsets, and a file with an `I32` tensor.
+It will also run a tensor with more than four numbers, a file whose tensors are
+not in name order, a file with two tensors, and a file with an `I32` tensor.

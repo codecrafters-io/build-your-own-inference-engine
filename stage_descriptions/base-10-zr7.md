@@ -25,11 +25,11 @@ later scores. Those masks are 50 MB of the file's 548 MB, which is why the file
 is larger than its weights.
 
 The starter code's loader already keeps each number as a 32-bit float, so the
-whole file takes about 550 MB of memory. The test server gives your program about
-2.5 GB, so keep the numbers the way the loader returns them, rather than turning
+whole file takes about 550 MB of memory. The test server gives your program
+2 GB, so keep the numbers the way the loader returns them, rather than turning
 each one into a separate object.
 {{#lang_is_python}}
-A list of Python floats, for example, would need about 6 GB.
+A list of Python floats, for example, would need about 4 GB.
 {{/lang_is_python}}
 
 ### Tests

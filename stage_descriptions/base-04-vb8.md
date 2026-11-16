@@ -128,9 +128,10 @@ Your program must print:
 [[0.0, 3.0]]
 ```
 
-The tester allows a difference of 0.0001 on each number. It will also run two
-rows, where each row is normalized on its own numbers, and layer 1 of a
-two-layer file.
+The tester allows a difference of 0.0001 on each number. It will also run three
+rows of four numbers through a block whose `ln_1` and attention weights are
+random numbers between -1 and 1, once for layer 0 and once for layer 1 of a
+two-layer file. Those models have two heads.
 
 ### Notes
 

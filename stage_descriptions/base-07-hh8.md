@@ -76,7 +76,8 @@ Your program must print:
 ```
 
 The ids have to match exactly. The tester will also run a file where every token
-has the same score.
+has the same score, and a two-layer model with random weights, where the four
+new ids are not all the same.
 
 ### Notes
 
