@@ -191,9 +191,11 @@ Your program must print:
 [[1.0], [1.8807970779778822]]
 ```
 
-The tester allows a difference of 0.0001 on each number. It will also run a head
-of size 2, where forgetting the division changes the second row, a model with
-two heads, and layer 1.
+The tester allows a difference of 0.0001 on each number. It will also run three
+models whose weights are random numbers between -1 and 1, with rows of four
+numbers: one with a single head, one with two heads, and one that reads layer 1.
+The numbers change on every run, and the tester's log lists every tensor it
+wrote.
 
 ### Notes
 

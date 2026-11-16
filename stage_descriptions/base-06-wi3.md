@@ -75,6 +75,7 @@ Your program must print:
 ```
 
 The tester allows a difference of 0.001 on each number, or 0.001 times the
-expected number, whichever is larger. It will also run a two-token sequence,
-where only the last position is scored, and a second layer that changes the
-scores.
+expected number, whichever is larger. It will also run two models whose
+weights are random numbers between -1 and 1, each with six tokens and a
+three-id sequence, where only the last position is scored. One has a single
+layer, and the other has two.

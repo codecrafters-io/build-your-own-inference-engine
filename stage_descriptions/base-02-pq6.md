@@ -75,8 +75,9 @@ Your program must print:
 ]
 ```
 
-The tester will also run the same token at two positions, and a sequence whose
-ids are not in order.
+The tester will also run two tables of random numbers, with rows of four
+numbers and ids that repeat and are not in order. The numbers change on every
+run, and the tester's log lists every tensor it wrote.
 
 ### Notes
 
@@ -87,5 +88,5 @@ ids are not in order.
   [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview.cast)
   of the file's bytes. Keep it that way, rather than turning it into a list.
   GPT-2's real weights are 548 MB, and as a list of Python floats they would
-  need about 6 GB.
+  need about 4 GB.
 {{/lang_is_python}}

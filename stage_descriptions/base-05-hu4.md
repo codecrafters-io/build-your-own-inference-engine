@@ -120,8 +120,9 @@ Your program must print:
 [[-0.15878819, 3.84116958]]
 ```
 
-The tester allows a difference of 0.0001 on each number. It will also run two
-rows, where the MLP works on each row alone, and layer 1 of a two-layer file.
+The tester allows a difference of 0.0001 on each number. It will also run three
+rows of four numbers through a block whose weights are all random numbers
+between -1 and 1, once for layer 0 and once for layer 1 of a two-layer file.
 
 ### Notes
 
