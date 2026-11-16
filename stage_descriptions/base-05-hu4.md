@@ -3,19 +3,16 @@ attention.
 
 ### Why an MLP?
 
-Attention moves information between rows. Nothing so far works on a row by
-itself, and that is the other half of a transformer block: an
-[MLP](https://www.3blue1brown.com/lessons/mlp), short for multilayer
-perceptron, which sees one row at a time and nothing else.
+Attention moves information between rows. The other half of a transformer block
+does the opposite: it works on each row on its own and never looks at another.
+That half is an [MLP](https://www.3blue1brown.com/lessons/mlp), short for
+multilayer perceptron, and it holds about two-thirds of a block's numbers.
 
 It's two multiplies by a weight with a function called GELU between them. The
 first widens the row from 768 numbers to 3,072, and the second brings it back.
-Those two weight tables hold about two-thirds of each block's numbers.
 
-The MLP is wrapped the same way attention is. The block layer-normalizes a copy
-of the row with `ln_2`, runs the MLP on that copy, and adds the result onto the
-row it started from. So a block normalizes twice, with its own weights each
-time:
+The MLP is wrapped the way attention is, with a layer norm of its own, so a
+block normalizes twice:
 
 ```text
 row ─┬─► ln_1 ─► attention ─► + ─┬─► ln_2 ─► MLP ─► + ─► output
@@ -36,17 +33,18 @@ Along with the tensors you already read, a block uses six more. For layer 0:
 | `h.0.mlp.c_proj.weight` | `[4 * n_embd, n_embd]` |
 | `h.0.mlp.c_proj.bias` | `[n_embd]` |
 
-Add three steps after the ones you already run:
+After the layer norm, attention, and residual add you already run, add three
+more steps:
 
-4. Layer-normalize a copy of each row from step 3 with `ln_2.weight` and
-   `ln_2.bias`.
-5. Multiply each copy by `mlp.c_fc.weight`, add `mlp.c_fc.bias`, and apply GELU
+1. Layer-normalize a copy of each row with `ln_2.weight` and `ln_2.bias`.
+2. Multiply each copy by `mlp.c_fc.weight`, add `mlp.c_fc.bias`, and apply GELU
    to every number. The row is now `4 * n_embd` numbers wide.
-6. Multiply by `mlp.c_proj.weight`, add `mlp.c_proj.bias`, and add the result
-   onto the rows from step 3.
+3. Multiply by `mlp.c_proj.weight`, add `mlp.c_proj.bias`, and add the result
+   onto the rows those copies came from.
 
-GELU is one formula, and copying its constants exactly matters as much as it
-did for layer norm:
+GELU is one formula, and its constants are load-bearing. Some libraries offer an
+exact version that this one approximates, and the two differ by about 0.00015,
+which is enough to fail the tester:
 
 ```text
 gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
@@ -60,17 +58,17 @@ weights keep the first two numbers of the wide row and put them back, and the
 input is `[[1, 2]]`:
 
 ```text
-// steps 1 to 3, as before
+// the layer norm, attention, and residual add you already run
 row           [1, 2] + [-1, 1] = [0, 3]
 
-// 4. layer norm with ln_2, the same rule
+// 1. layer norm with ln_2, the same rule
 normalized    about [-1, 1]
 
-// 5. × c_fc.weight + c_fc.bias, then GELU on every number
+// 2. × c_fc.weight + c_fc.bias, then GELU on every number
 wide row      [-1, 1, 0, 0, 0, 0, 0, 0]     // 4 * n_embd numbers
 after GELU    [-0.1588, 0.8412, 0, 0, 0, 0, 0, 0]
 
-// 6. × c_proj.weight + c_proj.bias, added onto the row from step 3
+// 3. × c_proj.weight + c_proj.bias, added onto the row above
 output        [0, 3] + [-0.1588, 0.8412] = [-0.1588, 3.8412]
 ```
 
@@ -101,9 +99,9 @@ for each position i:
 <summary>What does GELU do?</summary>
 
 GELU keeps positive numbers close to themselves and pushes negative ones toward
-0. Without it, steps 5 and 6 would each be a multiply and an add, and two of
-those in a row work out to a single multiply and add. The wider middle would add
-nothing.
+0. Without it, the two multiplies would each be a multiply and an add, and two
+of those in a row work out to a single multiply and add. The wider middle would
+add nothing.
 
 </details>
 
@@ -127,6 +125,6 @@ rows, where the MLP works on each row alone, and layer 1 of a two-layer file.
 
 ### Notes
 
-- Read the MLP's width from the shape of `mlp.c_fc.weight` rather than computing
-  it from `n_embd`.
-- The MLP never looks at other rows. Only attention does that.
+- GPT-2's MLP is always four times the row's width, so `mlp.c_fc.weight` has
+  shape `[n_embd, 4 * n_embd]`. Reading the width from that shape costs nothing
+  and keeps the code honest if a model ever differs.
