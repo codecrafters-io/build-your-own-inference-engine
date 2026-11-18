@@ -1,15 +1,22 @@
-In this stage, you'll finish the `block` command by adding the MLP that follows
-attention.
+In this stage, you'll finish `block` by adding the per-row computation that
+follows attention, called an MLP.
 
 ### Why an MLP?
 
 Attention moves information between rows. The other half of a transformer block
-does the opposite: it works on each row on its own and never looks at another.
+transforms each row independently, using the same learned weights at every
+position.
 That half is an [MLP](https://www.3blue1brown.com/lessons/mlp), short for
-multilayer perceptron, and it holds about two-thirds of a block's numbers.
+multilayer perceptron, and it holds about two-thirds of a block's learned weights.
 
-It's two multiplies by a weight with a function called GELU between them. The
-first widens the row from 768 numbers to 3,072, and the second brings it back.
+It has two matrix multiplications with a function called GELU between them.
+GPT-2's first multiplication widens a row from 768 numbers to 3,072, and the
+second brings it back. GELU acts on each number independently, reducing negative
+values toward zero while leaving large positive values close to themselves.
+
+GELU is nonlinear: it can't be expressed as just a multiply and an add. Without
+it, the two matrix multiplications and biases could be combined into one, and
+the wider middle wouldn't add this new kind of computation.
 
 The MLP is wrapped the way attention is, with a layer norm of its own, so a
 block normalizes twice:
@@ -42,9 +49,9 @@ more steps:
 3. Multiply by `mlp.c_proj.weight`, add `mlp.c_proj.bias`, and add the result
    onto the rows those copies came from.
 
-GELU is one formula, and its constants are load-bearing. Some libraries offer an
-exact version that this one approximates, and the two differ by about 0.00015,
-which is enough to fail the tester:
+Use GPT-2's tanh approximation of GELU, with these constants. Some libraries
+default to a different, exact formula, whose results can differ enough to
+exceed this stage's tolerance. Here, `tanh` is the hyperbolic tangent function:
 
 ```text
 gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
@@ -78,33 +85,6 @@ Print one JSON array of rows:
 [[-0.15878819, 3.84116958]]
 ```
 
-### Hints
-
-<details>
-<summary>What do the new steps look like as pseudocode?</summary>
-
-```text
-gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
-
-for each position i:
-    // row[i] is the row after attention was added onto it
-    n = layer_norm(row[i], ln_2.weight, ln_2.bias)
-    wide = gelu(each number of (n × mlp.c_fc.weight + mlp.c_fc.bias))
-    row[i] = row[i] + (wide × mlp.c_proj.weight + mlp.c_proj.bias)
-```
-
-</details>
-
-<details>
-<summary>What does GELU do?</summary>
-
-GELU keeps positive numbers close to themselves and pushes negative ones toward
-0. Without it, the two multiplies would each be a multiply and an add, and two
-of those in a row work out to a single multiply and add. The wider middle would
-add nothing.
-
-</details>
-
 ### Tests
 
 The tester will write the same three files as before, with `input.json` set to
@@ -127,5 +107,5 @@ between -1 and 1, once for layer 0 and once for layer 1 of a two-layer file.
 ### Notes
 
 - GPT-2's MLP is always four times the row's width, so `mlp.c_fc.weight` has
-  shape `[n_embd, 4 * n_embd]`. Reading the width from that shape costs nothing
-  and keeps the code honest if a model ever differs.
+  shape `[n_embd, 4 * n_embd]`. The model's shape determines the width even
+  when the test rows are much smaller than GPT-2's.

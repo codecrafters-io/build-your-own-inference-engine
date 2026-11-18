@@ -5,7 +5,9 @@ the next one.
 
 The blocks change each row, but they don't say which token comes next. Logits
 do. A logit is the model's raw score for one token as the next token, and a
-higher logit means a more likely next token.
+higher logit means a more likely next token. These scores are not probabilities.
+Softmax can turn them into probabilities, as it did for attention scores, but
+this command returns the raw scores.
 
 GPT-2 has 50,257 tokens, so it writes 50,257 logits, one per token. These are
 the five highest after "The capital of France is":
@@ -18,8 +20,8 @@ the five highest after "The capital of France is":
 | " France" | -101.21 |
 | " Paris" | -101.21 |
 
-The logits are all near -100, and that's normal. Only the differences between
-them matter, so " the" leads " now" by 0.57.
+These leading logits are near -100. Negative scores are valid: only their
+differences affect the softmax probabilities, so " the" leads " now" by 0.57.
 
 ### The `logits` command
 
@@ -32,19 +34,14 @@ them matter, so " the" leads " now" by 0.57.
 - `config.json`, the same format as for `attn`
 - `ids.json`, the same format as for `embed`
 
-Compute the logits like this:
+The IDs pass through embedding and every transformer block, in order from
+layer 0 through `n_layer - 1`. This computation is called a forward pass.
+The last position's row contains the context for predicting the next token.
+Apply `ln_f` to that row using the same layer-normalization formula and
+0.00001 constant as in a block.
 
-```text
-rows = the embedding of the ids, as embed does
-for each layer from 0 to n_layer - 1:
-    rows = the block's output for rows, as block does
-
-// layer norm with the same rule and 0.00001 as ln_1 in a block
-last = layer_norm(the last row of rows, ln_f.weight, ln_f.bias)
-
-for each token t:
-    logit[t] = dot(last, row t of wte.weight)
-```
+Each token's logit is the dot product of that final row with the token's row
+in `wte.weight`. Return the scores in token-ID order.
 
 The logits reuse the `wte.weight` table that `embed` reads. There is no
 separate output table.
@@ -75,7 +72,7 @@ Your program must print:
 ```
 
 The tester allows a difference of 0.001 on each number, or 0.001 times the
-expected number, whichever is larger. It will also run two models whose
-weights are random numbers between -1 and 1, each with six tokens and a
-three-id sequence, where only the last position is scored. One has a single
-layer, and the other has two.
+absolute value of the expected number, whichever is larger. It will also run
+two models whose weights are random numbers between -1 and 1, each with six
+tokens and a three-id sequence, where only the last position is scored. One
+has a single layer, and the other has two.

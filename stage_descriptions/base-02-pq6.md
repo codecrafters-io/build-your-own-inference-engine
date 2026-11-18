@@ -3,41 +3,36 @@ row of numbers.
 
 ### Why embed?
 
-GPT-2 doesn't read text. It reads tokens, which are words or pieces of words,
-and each token has a number called its id. GPT-2 knows 50,257 tokens. For
-example, the prompt "The capital of France is" is five tokens, with the ids
-`[464, 3139, 286, 4881, 318]`.
-
-An id is only a label, like a locker number. It says which token this is, and
-nothing about it. GPT-2 does all its work with arithmetic, so it swaps each id
-for a row of 768 numbers that describe the token. Those numbers were set during
-[training](https://developers.google.com/machine-learning/glossary#training),
+The token IDs you saw when inspecting the model are labels. An ID's size doesn't
+describe the token's meaning. GPT-2 replaces each ID with a learned row of 768
+numbers, called a token embedding, that its arithmetic can use. The numbers
+were set during [training](https://developers.google.com/machine-learning/glossary#training),
 and tokens used in similar ways ended up with similar rows. For example, the six
 rows most similar to the row for " Monday" are the other six days of the week.
 
 ### Token rows and position rows
 
-The rows are in a table called `wte.weight`, with one row for each token id. It
-is one of GPT-2's
-[weights](https://developers.google.com/machine-learning/glossary#weight), the
-numbers it learned in training.
+The rows are in `wte.weight`, one of GPT-2's learned
+[weight tables](https://developers.google.com/machine-learning/glossary#weight).
+It has one row per token ID.
 
 A token's row doesn't say where the token sits in the prompt. So a second table,
 `wpe.weight`, has one row for each position: row 0 for the first token, row 1
 for the second, and so on, up to 1,024 positions.
 
-A token's embedding is the sum of its two rows, added number by number. For
-example, "France" is token 4881, at position 3 in "The capital of France is".
+A position's input embedding is the sum of its token and position rows, added
+number by number. For example, " France" is token 4881, including its leading
+space. It is at position 3 in "The capital of France is", counting from 0.
 Here are the first 4 of its 768 numbers, rounded:
 
 ```text
 row 4881 of wte.weight      [-0.07,  0.05,  0.16, -0.07, ...]
 row 3 of wpe.weight       + [ 0.00, -0.07,  0.11,  0.00, ...]
                             ---------------------------------
-embedding of "France"     = [-0.07, -0.02,  0.27, -0.07, ...]
+embedding of " France"    = [-0.07, -0.02,  0.27, -0.07, ...]
 ```
 
-If "France" appeared again at position 5, it would use the same row 4881 of
+If " France" appeared again at position 5, it would use the same row 4881 of
 `wte.weight` but row 5 of `wpe.weight`, so its embedding would be different.
 
 ### The `embed` command
@@ -49,11 +44,8 @@ If "France" appeared again at position 5, it would use the same row 4881 of
     - `wte.weight`, with shape `[2, 2]` and values `1, 2, 3, 4`.
     - `wpe.weight`, with shape `[2, 2]` and values `10, 20, 30, 40`.
 
-For the id at position `i` in `ids.json`, counting from 0:
-
-1. Take row `id` of `wte.weight`.
-2. Take row `i` of `wpe.weight`.
-3. Add the two rows, number by number.
+For token ID `id` at position `i`, the output row is `wte.weight[id]` plus
+`wpe.weight[i]`, added number by number. Both indices count from 0.
 
 ### Finding a row
 
