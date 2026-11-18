@@ -7,9 +7,11 @@ short_name: "Inference Engine"
 release_status: "alpha"
 
 description_md: |-
-  Why does "The capital of France is" always continue with the same words? GPT-2 gives every possible next word a score, picks the word with the highest score, and repeats. An inference engine is the program that runs a trained model. It loads the model's weights, its tables of numbers, and does the arithmetic that turns a prompt into the next word. In this challenge, you'll build one for GPT-2, load its real weights, and get the same words GPT-2 writes.
+  How can a file of numbers continue "The capital of France is"?
 
-  Along the way, you'll learn about attention, the transformer, and more.
+  You'll build an inference engine that loads GPT-2's learned numbers, called weights. It turns token IDs, labels for pieces of text, into numeric rows and uses the weights to score possible next tokens. Your engine will pick the highest-scoring token or sample from probabilities, then extend the input and predict again.
+
+  You'll practice tensor operations, attention that combines information from earlier tokens, transformer blocks, and caching repeated computations while running GPT-2's real weights.
 
 short_description_md: |-
   Learn about attention, the transformer, and more

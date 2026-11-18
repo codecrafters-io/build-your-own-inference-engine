@@ -4,12 +4,13 @@ In this stage, you'll run your `generate` command on GPT-2's real weights.
 
 Every file so far was a tiny model built to check one rule. GPT-2's real file
 uses the same tensor names, at full size: 160 tensors holding 124 million
-weights. Your engine already runs every step GPT-2 runs, so on the real weights
-it should write the same words GPT-2 does.
+learned weights plus supporting data. Your engine now has the operations
+needed to run this model. With these weights and greedy decoding, it should
+produce GPT-2's expected token IDs for the test prompt.
 
 For example, take the prompt "The capital of France is". Its ids are
 `[464, 3139, 286, 4881, 318]`. GPT-2 continues it with " the capital of the
-French Republic". Those six ids are:
+French Republic" when using greedy decoding. Those six IDs are:
 
 ```json
 [262, 3139, 286, 262, 4141, 2066]
@@ -24,10 +25,10 @@ with the weights, and you can skip it because your attention already drops the
 later scores. Those masks are 50 MB of the file's 548 MB, which is why the file
 is larger than its weights.
 
-The starter code's loader already keeps each number as a 32-bit float, so the
-whole file takes about 550 MB of memory. The test server gives your program
-2 GB, so keep the numbers the way the loader returns them, rather than turning
-each one into a separate object.
+The starter code's loader keeps the weights in 32-bit storage, which takes
+about 550 MB. Your program also needs memory for intermediate results, and
+loading can temporarily require another copy of the file. The test server
+gives your program 2 GB, so keep the weights in the storage the loader supplies.
 {{#lang_is_python}}
 A list of Python floats, for example, would need about 4 GB.
 {{/lang_is_python}}
@@ -58,17 +59,18 @@ $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 The ids have to match exactly. The tester will also turn your ids back into
 text and print what your engine wrote, " the capital of the French Republic".
 
-This test takes longer than the earlier ones. The tester first downloads GPT-2's
-weights, which takes 5 to 15 seconds, and then your engine runs all 12 layers
-for every token.
+This test takes longer than the small-model tests. The tester makes the weight
+file available, downloading it if needed, before starting your program. Your
+engine then has up to 300 seconds to generate the six IDs. Download time and
+computation time depend on the environment.
 {{#lang_is_python}}
-A Python engine that reuses keys and values takes about 45 seconds on a laptop,
-and can take longer on the test servers. The tester stops your program after
-300 seconds, so an engine that recomputes the whole sequence at every step can
-run out of time.
+Loops over large weight tables can dominate runtime. Reusing keys and values
+avoids running the whole prompt through every layer again for each new token.
 {{/lang_is_python}}
 {{^lang_is_python}}
-A {{language_name}} engine finishes in a few seconds.
+The larger model uses the same dimension rules as the small examples. Its
+tensor shapes and configuration determine row widths, head sizes, and layer
+counts.
 {{/lang_is_python}}
 
 ### Notes
@@ -83,11 +85,11 @@ A {{language_name}} engine finishes in a few seconds.
     curl -L -o model.safetensors https://huggingface.co/openai-community/gpt2/resolve/main/model.safetensors
     ```
 
-- To read your ids as text, download
-  [`vocab.json`](https://huggingface.co/openai-community/gpt2/blob/main/vocab.json)
-  from the same page. It maps each token's text to its id, and a leading `Ġ`
-  stands for a space. For a prompt whose words are each a single token, look up
-  each word there to build `ids.json`.
+- To inspect the supplied ASCII prompt's vocabulary entries, see
+  [`vocab.json`](https://huggingface.co/openai-community/gpt2/blob/main/vocab.json).
+  Its keys are GPT-2's encoded spellings. For this prompt, `The` maps to `464`
+  and `ĠFrance` maps to `4881`. The leading `Ġ` represents the space in
+  ` France`.
 - Past six tokens, GPT-2's top two scores can be very close. At the seventh
   step for this prompt they differ by 0.007, so an engine that uses 32-bit
   floats and one that uses 64-bit floats may choose different tokens. That

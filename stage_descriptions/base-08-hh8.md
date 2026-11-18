@@ -6,7 +6,8 @@ highest-scoring token.
 Logits score every possible next token, but writing text means choosing one.
 Greedy decoding is the simplest choice. It takes the highest score, appends that
 token, and scores the longer sequence again. It uses no randomness, so the same
-prompt always continues the same way, and you can check every id it writes.
+prompt with unchanged model weights continues the same way. You can check every
+ID it writes.
 
 Here is GPT-2 continuing "The capital of France is", one step at a time:
 
@@ -31,15 +32,13 @@ Republic" from " the capital of France".
 { "count": 2 }
 ```
 
-Generate the new ids like this:
+Generate `count` new IDs. At each step, select the token with the highest logit,
+choosing the lower ID when scores tie. Include that token in the sequence used
+to predict the following token, so each prediction depends on what has already
+been generated.
 
-```text
-repeat count times:
-    scores = the logits for ids, as logits computes them
-    best = the id with the highest score, the lower id on a tie
-    append best to ids, and to the new ids
-print the new ids as a JSON array
-```
+Print a JSON array containing only the new IDs. The original prompt IDs are
+excluded from this output.
 
 In this example `ln_f.bias` is `[0, 1]` and `ln_f.weight` is `[0, 0]`, so the
 normalized last row is always `[0, 1]`. Against the token rows `[1, 0]` and
@@ -49,17 +48,6 @@ token 1:
 ```json
 [1, 1]
 ```
-
-### Hints
-
-<details>
-<summary>How do I keep the lower id on a tie?</summary>
-
-Go through the ids from 0 upward, and replace the best id only when a score is
-strictly greater than the best so far. An equal score then keeps the earlier,
-lower id.
-
-</details>
 
 ### Tests
 

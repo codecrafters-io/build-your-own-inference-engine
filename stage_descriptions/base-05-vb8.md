@@ -1,25 +1,24 @@
-In this stage, you'll implement the `block` command to run attention inside a
-layer norm and a residual add.
+In this stage, you'll implement `block` to normalize rows before attention and
+add attention's output back to the original rows.
 
 ### Why wrap attention?
 
-`attn` replaces each row with a weighted average of itself and the rows before
-it, and that throws something away. In the weights you saw when you built
-`attn`, only 0.06 of the new row for "is" came from "is". The rest came from
-"France" and "The", so the row now says what the sentence is about and has
-nearly forgotten which word it is.
+The output of `attn` combines transformed information from several positions.
+On its own, that output has no direct path carrying the original input row
+forward. A residual connection supplies that path by adding the input row to
+attention's output, number by number.
 
-A [transformer](https://www.3blue1brown.com/lessons/gpt) keeps both. GPT-2 is a
-stack of 12 identical blocks, and a block adds attention's output onto the row
-it started from instead of replacing it. The row keeps what it was, plus what
-attention found.
+A [transformer](https://www.3blue1brown.com/lessons/gpt) combines attention with
+per-row calculations in repeated blocks. GPT-2 has 12 blocks with the same
+structure and different learned weights. Each block's attention output is an
+update added to its input.
 
-Adding onto a row over and over makes its numbers grow. So each block first
-rescales a copy of the row, a step called
+Repeated updates can change the scale of a row's numbers. Before attention,
+GPT-2 rescales a copy of each row with
 [layer normalization](https://www.pinecone.io/learn/batch-layer-normalization/).
-It shifts and scales the numbers so their average is 0 and their standard
-deviation is about 1, then applies a weight and a bias of its own. A row and the
-same row ten times larger come out almost the same:
+It subtracts the row's average and divides by a measure of its spread, then
+applies a learned scale and bias. With scale 1 and bias 0, these two rows
+normalize to almost the same values:
 
 ```text
 row          [2, 4, 6, 8]                 [20, 40, 60, 80]
@@ -50,11 +49,14 @@ row ─┬─► ln_1 ─► attention ─► + ─► output
 
 1. Layer-normalize a copy of each row with `ln_1.weight` and `ln_1.bias`.
 2. Run attention on those copies, the same way `attn` does.
-3. Add the attention output onto the block's input rows, not onto the copies.
+3. Add the attention output onto the block's original input rows. The normalized
+   copies are only inputs to attention.
 
-Layer norm is one formula, with 0.00001 from GPT-2's own definition. The mean
-and the variance are taken over the row's numbers, and the variance is the
-average of `(x - mean)^2`:
+Layer norm uses the formula below. The mean is the average of the row's
+numbers. The variance is the average of `(x - mean)^2`, which measures their
+spread. The constant 0.00001 prevents division by zero for a constant row and
+matches GPT-2's definition. Apply the corresponding weight and bias to each
+coordinate:
 
 ```text
 layer_norm(x) = (x - mean) / sqrt(variance + 0.00001) * weight + bias
@@ -84,28 +86,6 @@ Print one JSON array of rows:
 ```json
 [[0.0, 3.0]]
 ```
-
-### Hints
-
-<details>
-<summary>What does this look like as pseudocode?</summary>
-
-```text
-layer_norm(row, weight, bias):
-    mean = the average of the row's numbers
-    variance = the average of (x - mean)^2 over the row's numbers
-    for each index i:
-        x = (row[i] - mean) / sqrt(variance + 0.00001)
-        out[i] = x * weight[i] + bias[i]
-
-normed = layer_norm(each row, ln_1.weight, ln_1.bias)
-attended = attention(normed)
-
-for each position i:
-    result[i] = row[i] + attended[i]
-```
-
-</details>
 
 ### Tests
 

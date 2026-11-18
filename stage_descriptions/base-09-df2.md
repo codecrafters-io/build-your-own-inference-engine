@@ -3,12 +3,15 @@ random, weighted by its probability.
 
 ### Why sample?
 
-Greedy decoding always appends the same token, so a prompt can only ever
-continue one way. Sampling picks a token at random, weighted by its probability,
-so the same prompt can continue differently on each run.
+With fixed model weights, greedy decoding gives a prompt the same continuation
+on each run. Sampling allows different continuations by choosing among tokens
+according to their probabilities. A more probable token gets a larger share
+of the possible random choices.
 
-Temperature divides the logits before the softmax. A temperature below 1 makes
-the likely tokens even more likely. Here are GPT-2's probabilities for the
+Temperature is a positive number that controls how concentrated those
+probabilities are. Dividing logits by a temperature below 1 before softmax
+favors the highest scores more strongly. A temperature above 1 spreads the
+probability more evenly. Here are GPT-2's probabilities for the
 first token after "The capital of France is":
 
 | Token | Temperature 1 | Temperature 0.7 |
@@ -19,8 +22,9 @@ first token after "The capital of France is":
 | " France" | 0.032 | 0.058 |
 | " Paris" | 0.032 | 0.057 |
 
-Top-p then throws away the least likely tokens. It keeps the most likely ones
-until their probabilities add up to `top_p`. With a `top_p` of 0.9, that's
+Top-p limits the set of tokens available for selection. It keeps the most
+likely tokens until their probabilities first reach or exceed `top_p`.
+With a `top_p` of 0.9, that's
 1,503 tokens at temperature 1, and 62 at temperature 0.7.
 
 ### Sampling one token
@@ -35,20 +39,20 @@ When `tokens.json` has no `temperature`, keep taking the highest score as
 before. The tester still runs those files, with nothing on stdin.
 
 Stdin has one number per new token, each between 0 and 1. Read them as text, one
-per line. Pick each new token like this:
+per line. These supplied numbers make the test repeatable, so don't generate
+your own random numbers.
 
-```text
-p = softmax(each logit / temperature)
-order = the token ids sorted by p, highest first, the lower id first on a tie
-kept = the shortest start of order whose p adds up to at least top_p
-divide each kept p by the sum of the kept p, so they add up to 1 again
+For each prediction, use softmax on `logit / temperature` to get probabilities.
+Order tokens by descending probability, with the lower ID first on a tie.
+Keep the shortest prefix of that order whose total probability reaches or
+exceeds `top_p`. The token that reaches the threshold stays in the set.
 
-r = the next number from stdin
-total = 0
-for each id in kept, in order:
-    total = total + p[id]
-    if total > r: pick id, and stop
-```
+Divide the retained probabilities by their total so they sum to 1 again.
+In the same order, each token occupies an interval whose width is its new
+probability. Choose the first token whose cumulative probability is strictly
+greater than the next number from stdin. As with greedy decoding, the selected
+ID joins the sequence for the next prediction, and stdout contains only the
+new IDs.
 
 In this example the two tokens have the same score, so the probabilities are 0.5
 and 0.5. The sorted order is token 0, then token 1. The running totals are 0.5
@@ -81,7 +85,7 @@ has a `top_p` below 1, and the other has a temperature other than 1.
 ### Notes
 
 - `top_p` of 1 keeps every token that has a probability above 0.
-- GPT-2's logits are all near -100. In 32-bit floats, raising `e` to a number
-  that low gives 0, and the softmax then divides 0 by 0. Subtract the largest
-  logit from every logit first. The probabilities come out the same, because
-  softmax only depends on the differences between logits.
+- Very negative inputs to an exponential can underflow to zero, while very
+  positive inputs can overflow. For a stable softmax, subtract the largest
+  scaled logit before taking exponentials. This leaves the probabilities
+  unchanged because softmax depends only on differences between its inputs.
