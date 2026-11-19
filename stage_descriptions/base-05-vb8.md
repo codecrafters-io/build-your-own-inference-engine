@@ -5,7 +5,7 @@ layer norm and a residual add.
 
 `attn` replaces each row with a weighted average of itself and the rows before
 it, and that throws something away. In the weights you saw when you built
-`attn`, only 0.06 of the new row for "is" came from "is". The rest came from
+`attn`, only 0.058 of the new row for "is" came from "is". The rest came from
 "France" and "The", so the row now says what the sentence is about and has
 nearly forgotten which word it is.
 
@@ -50,7 +50,8 @@ row ─┬─► ln_1 ─► attention ─► + ─► output
 
 1. Layer-normalize a copy of each row with `ln_1.weight` and `ln_1.bias`.
 2. Run attention on those copies, the same way `attn` does.
-3. Add the attention output onto the block's input rows, not onto the copies.
+3. Add the attention output onto the block's input rows rather than the
+   normalized copies.
 
 Layer norm is one formula, with 0.00001 from GPT-2's own definition. The mean
 and the variance are taken over the row's numbers, and the variance is the

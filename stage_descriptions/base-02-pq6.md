@@ -1,5 +1,6 @@
 In this stage, you'll implement the `embed` command to turn each token id into a
-row of numbers.
+row of numbers. It's the first step of generation, since the layers do their
+arithmetic on rows, never on ids.
 
 ### Why embed?
 
@@ -122,8 +123,8 @@ Your program must print:
 ```
 
 The tester reads your output as JSON, so `13` and `13.0` both pass. It will also
-run two tables of random numbers, with rows of four numbers and ids that repeat
-and are not in order. The numbers change on every run, and the tester's log
+run two tables of random numbers, with rows of four numbers and ids that are
+not sorted and may repeat. The numbers change on every run, and the tester's log
 lists every tensor it wrote.
 
 ### Notes

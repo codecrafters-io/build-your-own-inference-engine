@@ -9,18 +9,18 @@ sentence "The capital of France is". The row for "is" does not yet depend on
 
 Attention fixes this by replacing each row with a weighted average of itself and
 the rows before it. Later words don't exist yet when GPT-2 writes a word. For
-example, in one of its later steps, GPT-2 gives the row for "is" these weights:
+example, in one of its later layers, GPT-2 gives the row for "is" these weights:
 
 | Word | Weight |
 | --- | --- |
-| "The" | 0.35 |
-| "capital" | 0.02 |
-| "of" | 0.01 |
-| "France" | 0.57 |
-| "is" | 0.06 |
+| "The" | 0.347 |
+| "capital" | 0.017 |
+| "of" | 0.007 |
+| "France" | 0.571 |
+| "is" | 0.058 |
 
-More than half of the new row for "is" comes from "France". GPT-2 often parks
-weight it doesn't need on the first word, which is the 0.35 on "The".
+More than half of the new row for "is" comes from "France". Most of what's left,
+0.347, sits on "The", the first word.
 
 ### Where the weights come from
 

@@ -10,7 +10,7 @@ prompt always continues the same way, and you can check every id it writes.
 
 Here is GPT-2 continuing "The capital of France is", one step at a time:
 
-| Step | Picked | Runner-up | Lead |
+| Step | Picked | Runner-up | Logit lead |
 | --- | --- | --- | --- |
 | 1 | " the" | " now" | 0.57 |
 | 2 | " capital" | " city" | 1.62 |

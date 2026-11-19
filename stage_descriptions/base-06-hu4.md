@@ -43,8 +43,8 @@ more steps:
    onto the rows those copies came from.
 
 GELU is one formula, and its constants are load-bearing. Some libraries offer an
-exact version that this one approximates, and the two differ by about 0.00015,
-which is enough to fail the tester:
+exact version that this one approximates, and the two differ by up to about
+0.0005, which is enough to fail the tester:
 
 ```text
 gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))

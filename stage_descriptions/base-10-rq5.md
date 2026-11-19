@@ -23,8 +23,8 @@ The command is the same one as greedy decoding. `tokens.json` again holds a
 count, and there is no temperature. The ids must match a run that recomputes the
 whole sequence at every step.
 
-A key and a value are the lists of numbers from step 1 of attention, after
-`c_attn` and split into heads. Keep them in a list for each layer and each head:
+A key and a value are the key and value parts of each row's `c_attn` output,
+cut into head slices. Keep them in a list for each layer and each head:
 
 ```text
 keys[layer][head], values[layer][head] = empty lists
@@ -54,6 +54,10 @@ comes out. The ids are:
 ```json
 [0, 1, 1]
 ```
+
+A `generate` that recomputes the whole sequence at every step prints the same
+three ids for the same files. The cache changes the arithmetic. The answer
+stays the same.
 
 ### Tests
 
