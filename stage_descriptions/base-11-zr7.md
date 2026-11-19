@@ -1,10 +1,10 @@
-In this stage, you'll run your `generate` command on GPT-2's real weights.
+In this stage, you'll run your `generate` command on GPT-2's own weights.
 
 ### Why run GPT-2?
 
-Every file so far was a tiny model built to check one rule. GPT-2's real file
+Every file so far was a tiny model built to check one rule. GPT-2's own file
 uses the same tensor names, at full size: 160 tensors holding 124 million
-weights. Your engine already runs every step GPT-2 runs, so on the real weights
+weights. Your engine already runs every step GPT-2 runs, so on these weights
 it should write the same words GPT-2 does.
 
 For example, take the prompt "The capital of France is". Its ids are
@@ -62,9 +62,9 @@ This test takes longer than the earlier ones. The tester first downloads GPT-2's
 weights into a cache, which takes a few seconds, and then your engine runs all
 12 layers for every token. The tester stops your program after 300 seconds.
 {{#lang_is_python}}
-A Python engine has to fit in that limit. One that runs the whole sequence
-again for every new token is too slow at this size, and one that reuses keys and
-values finishes well inside it.
+Running the whole sequence again at every step does about four times the
+arithmetic here. In Python that gap can be the difference between passing and
+running out of time.
 {{/lang_is_python}}
 
 ### Notes

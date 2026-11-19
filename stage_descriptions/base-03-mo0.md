@@ -7,8 +7,9 @@ After embedding, the row for a token is only that token. For example, take the
 sentence "The capital of France is". The row for "is" does not yet depend on
 "France", so nothing in it says which capital comes next.
 
-Attention fixes this by replacing each row with a weighted average of itself and
-the rows before it. Later words don't exist yet when GPT-2 writes a word. For
+Attention fixes this by replacing each row with a weighted average of the values
+it takes from itself and the rows before it. Later words don't exist yet when
+GPT-2 writes a word. For
 example, in one of its later layers, GPT-2 gives the row for "is" these weights:
 
 | Word | Weight |
@@ -53,8 +54,8 @@ later stages.
     { "n_embd": 1, "n_head": 1, "n_layer": 1, "n_positions": 4, "vocab_size": 2 }
     ```
 
-- `model.safetensors` holds four weight tables per layer, named with `h.` and
-  the layer number. For layer 0:
+- `model.safetensors` holds four weight tables per layer in this stage's files,
+  named with `h.` and the layer number. For layer 0:
     - `h.0.attn.c_attn.weight`, with shape `[n_embd, 3 * n_embd]`
     - `h.0.attn.c_attn.bias`, with shape `[3 * n_embd]`
     - `h.0.attn.c_proj.weight`, with shape `[n_embd, n_embd]`

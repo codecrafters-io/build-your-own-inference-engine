@@ -1,6 +1,6 @@
-In this stage, you'll implement the `inspect` command to print what's inside a
-trained model's file. Generation needs the weights read correctly first, and
-`inspect` is how you check what your engine loaded.
+Generation needs the weights read correctly before it can do anything with
+them. In this stage, you'll implement the `inspect` command to print what's
+inside a trained model's file.
 
 ### How an inference engine works
 
@@ -39,9 +39,9 @@ build.
 | Score | Scores every possible next token |
 | Pick | Takes the highest score, or samples |
 | Repeat | Feeds the new token back in, reusing past work |
-| Run | Does all of it on GPT-2's real weights |
+| Run | Does all of it on GPT-2's own weights |
 
-Generation itself starts at Embed, with the token ids.
+Generation itself starts with the embeddings, from the token ids.
 
 `inspect` generates nothing, and it keeps earning its place after this stage.
 When numbers come out wrong, it shows what your engine actually loaded.
@@ -82,9 +82,12 @@ The file uses a format called
 code's loader already reads it, and returns every tensor's `dtype`, shape, and
 numbers, by name.
 
-That's the entire exercise: load the tensors, pick out a few values, and print
+That's the entire stage: load the tensors, pick out a few values, and print
 them as JSON. There's no model arithmetic in this stage. Later stages do the
 computing, on the tensors the loader returns.
+
+Print only the JSON to stdout. Send debug output to stderr, the way the starter
+code prints its `Logs from your program will appear here!` line.
 
 ### Tests
 

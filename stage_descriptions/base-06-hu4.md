@@ -59,7 +59,7 @@ input is `[[1, 2]]`:
 
 ```text
 // the layer norm, attention, and residual add you already run
-row           [1, 2] + [-1, 1] = [0, 3]
+row           [1, 2] + [-1, 1] = about [0, 3]
 
 // 1. layer norm with ln_2, the same rule
 normalized    about [-1, 1]

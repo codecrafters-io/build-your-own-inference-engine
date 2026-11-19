@@ -1,6 +1,5 @@
-In this stage, you'll implement the `embed` command to turn each token id into a
-row of numbers. It's the first step of generation, since the layers do their
-arithmetic on rows, never on ids.
+The layers do their arithmetic on rows of numbers, never on ids. In this stage,
+you'll implement the `embed` command to turn each token id into a row of numbers.
 
 ### Why embed?
 

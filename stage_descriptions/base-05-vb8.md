@@ -139,5 +139,5 @@ two-layer file. Those models have two heads.
 - Divide by the count of numbers in the row when you take the variance. Many
   built-in variance functions divide by one less, which turns 0.25 into 0.5 for
   the row `[1, 2]` and the output into `[0.29, 2.71]` instead of `[0, 3]`.
-- The file also holds `ln_2` and the MLP tensors, which later stages use. They
-  are all zeros here, so you can ignore them for now.
+- The file also holds `ln_2` and the MLP tensors. The MLP tensors are all zeros
+  here, so you can ignore them until the next stage.
