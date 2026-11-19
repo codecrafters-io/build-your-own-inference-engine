@@ -140,4 +140,4 @@ two-layer file. Those models have two heads.
   built-in variance functions divide by one less, which turns 0.25 into 0.5 for
   the row `[1, 2]` and the output into `[0.29, 2.71]` instead of `[0, 3]`.
 - The file also holds `ln_2` and the MLP tensors. The MLP tensors are all zeros
-  here, so you can ignore them until the next stage.
+  here, so you can ignore them until later stages.
