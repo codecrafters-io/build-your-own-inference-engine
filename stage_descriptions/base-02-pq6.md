@@ -1,15 +1,15 @@
-The layers do their arithmetic on rows of numbers, never on ids. In this stage,
-you'll implement the `embed` command to turn each token id into a row of numbers.
+The layers do their arithmetic on rows of numbers, never on IDs. In this stage,
+you'll implement the `embed` command to turn each token ID into a row of numbers.
 
 ### Why embed?
 
 GPT-2 doesn't read text. It reads tokens, which are words or pieces of words,
-and each token has a number called its id. GPT-2 knows 50,257 tokens. For
-example, the prompt "The capital of France is" is five tokens, with the ids
+and each token has a number called its ID. GPT-2 knows 50,257 tokens. For
+example, the prompt "The capital of France is" is five tokens, with the IDs
 `[464, 3139, 286, 4881, 318]`.
 
-An id is only a label, like a locker number. It says which token this is, and
-nothing about it. GPT-2 does all its work with arithmetic, so it swaps each id
+An ID is only a label, like a locker number. It says which token this is, and
+nothing about it. GPT-2 does all its work with arithmetic, so it swaps each ID
 for a row of 768 numbers that describe the token. Those numbers were set during
 [training](https://developers.google.com/machine-learning/glossary#training),
 and tokens used in similar ways ended up with similar rows. For example, the six
@@ -17,7 +17,7 @@ rows most similar to the row for " Monday" are the other six days of the week.
 
 ### Token rows and position rows
 
-The rows are in a table called `wte.weight`, with one row for each token id. It
+The rows are in a table called `wte.weight`, with one row for each token ID. It
 is one of GPT-2's
 [weights](https://developers.google.com/machine-learning/glossary#weight), the
 numbers it learned in training.
@@ -44,12 +44,12 @@ If "France" appeared again at position 5, it would use the same row 4881 of
 
 `embed` reads two files. In this stage's example:
 
-- `ids.json` holds the token ids, `[1, 0]`.
+- `ids.json` holds the token IDs, `[1, 0]`.
 - `model.safetensors` holds the two tables:
     - `wte.weight`, with shape `[2, 2]` and values `1, 2, 3, 4`.
     - `wpe.weight`, with shape `[2, 2]` and values `10, 20, 30, 40`.
 
-For the id at position `i` in `ids.json`, counting from 0:
+For the ID at position `i` in `ids.json`, counting from 0:
 
 1. Take row `id` of `wte.weight`.
 2. Take row `i` of `wpe.weight`.
@@ -89,7 +89,7 @@ holds its shape in `Shape` and its flat list of numbers in `Values`.
 So in this example, the rows of `wte.weight` are `[1, 2]` and `[3, 4]`, and the
 rows of `wpe.weight` are `[10, 20]` and `[30, 40]`:
 
-| Position | Id | Row of `wte.weight` | Row of `wpe.weight` | Embedding |
+| Position | ID | Row of `wte.weight` | Row of `wpe.weight` | Embedding |
 | --- | --- | --- | --- | --- |
 | 0 | 1 | `[3, 4]` | `[10, 20]` | `[13, 24]` |
 | 1 | 0 | `[1, 2]` | `[30, 40]` | `[31, 42]` |
@@ -122,7 +122,7 @@ Your program must print:
 ```
 
 The tester reads your output as JSON, so `13` and `13.0` both pass. It will also
-run two tables of random numbers, with rows of four numbers and ids that are
+run two tables of random numbers, with rows of four numbers and IDs that are
 not sorted and may repeat. The numbers change on every run, and the tester's log
 lists every tensor it wrote.
 

@@ -23,9 +23,9 @@ model.safetensors
 └── ln_f.bias
 ```
 
-GPT-2 doesn't read words. It reads token ids, numbers that each stand for a
+GPT-2 doesn't read words. It reads token IDs, numbers that each stand for a
 word or a part of a word. For example, the prompt "The capital of France is"
-becomes the ids `[464, 3139, 286, 4881, 318]`.
+becomes the IDs `[464, 3139, 286, 4881, 318]`.
 
 The weights do nothing on their own. Reading the file, running the layers, and
 choosing each next token are the engine's work, and the engine is what you
@@ -34,14 +34,14 @@ build.
 | Step | What it does |
 | --- | --- |
 | Inspect | Reads every tensor's name, shape, and first numbers |
-| Embed | Turns each token id into a row of numbers |
+| Embed | Turns each token ID into a row of numbers |
 | Attend | Mixes earlier tokens into the current one |
 | Score | Scores every possible next token |
 | Pick | Takes the highest score, or samples |
 | Repeat | Feeds the new token back in, reusing past work |
 | Run | Does all of it on GPT-2's own weights |
 
-Generation itself starts with the embeddings, from the token ids.
+Generation itself starts with the embeddings, from the token IDs.
 
 `inspect` generates nothing, and it keeps earning its place in later stages.
 When numbers come out wrong, it shows what your engine actually loaded.

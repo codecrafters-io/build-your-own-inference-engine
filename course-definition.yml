@@ -95,7 +95,7 @@ stages:
     name: "Embed tokens"
     difficulty: easy
     marketing_md: |-
-      In this stage, you'll implement the `embed` command to turn each token id into a row of numbers.
+      In this stage, you'll implement the `embed` command to turn each token ID into a row of numbers.
   - slug: "mo0"
     name: "Causal attention"
     difficulty: medium

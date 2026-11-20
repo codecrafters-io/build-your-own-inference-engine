@@ -74,7 +74,7 @@ Your program must print:
 [1]
 ```
 
-The ids have to match exactly. The tester will also run two models with random
+The IDs have to match exactly. The tester will also run two models with random
 weights, asking each for four new tokens and sending four random numbers. One
 has a `top_p` below 1, and the other has a temperature other than 1.
 

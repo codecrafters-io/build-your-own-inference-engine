@@ -7,9 +7,9 @@ uses the same tensor names, at full size: 160 tensors holding 124 million
 weights. Your engine already runs every step GPT-2 runs, so on these weights
 it should write the same words GPT-2 does.
 
-For example, take the prompt "The capital of France is". Its ids are
+For example, take the prompt "The capital of France is". Its IDs are
 `[464, 3139, 286, 4881, 318]`. GPT-2 continues it with " the capital of the
-French Republic". Those six ids are:
+French Republic". Those six IDs are:
 
 ```json
 [262, 3139, 286, 262, 4141, 2066]
@@ -55,7 +55,7 @@ $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 [262, 3139, 286, 262, 4141, 2066]
 ```
 
-The ids have to match exactly. The tester will also turn your ids back into
+The IDs have to match exactly. The tester will also turn your IDs back into
 text and print what your engine wrote, " the capital of the French Republic".
 
 This test takes longer than the earlier ones. The tester first downloads GPT-2's
@@ -83,9 +83,9 @@ running out of time.
     `{"count": 6}`. Then run your program from that folder:
     `/path/to/your_program.sh generate model.safetensors config.json ids.json tokens.json`.
 
-- To read your ids as text, download
+- To read your IDs as text, download
   [`vocab.json`](https://huggingface.co/openai-community/gpt2/blob/main/vocab.json)
-  from the same page. It maps each token's text to its id, and a leading `Ġ`
+  from the same page. It maps each token's text to its ID, and a leading `Ġ`
   stands for a space. For a prompt whose words are each a single token, look up
   each word there to build `ids.json`.
 - Past six tokens, GPT-2's top two scores can be very close. At the seventh

@@ -49,7 +49,7 @@ for each token t:
 The logits reuse the `wte.weight` table that `embed` reads. There is no
 separate output table.
 
-In this example `n_embd` is 2 and there is one layer. The ids are `[0]`.
+In this example `n_embd` is 2 and there is one layer. The IDs are `[0]`.
 `ln_f.bias` is `[1, -1]` and `ln_f.weight` is `[0, 0]`, so the final layer norm
 returns `[1, -1]` whatever the last row held. The token rows are `[1, 1]` and
 `[1, -1]`. The dot products are `1 * 1 + -1 * 1 = 0` and
@@ -77,5 +77,5 @@ number, whichever is larger. For this example, your program should print:
 ```
 
 It will also run two models whose weights are random numbers between -1 and 1,
-each with six tokens and a three-id sequence, where only the last position is
+each with six tokens and a three-ID sequence, where only the last position is
 scored. One has a single layer, and the other has two.

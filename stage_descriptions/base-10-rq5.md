@@ -7,7 +7,7 @@ A new token needs its own query, key, and value only when it is fed back in to
 produce another token. The keys and values of the tokens already written do not
 change, so they can be kept and reused. Scoring a new token by running every
 earlier token through all of GPT-2's 12 layers again repeats that work. Keeping
-the keys and values makes the new ids come out the same, with less arithmetic.
+the keys and values makes the new IDs come out the same, with less arithmetic.
 This is called a KV cache, short for key-value cache.
 
 For "The capital of France is" and six new tokens, greedy decoding runs 5 + 6 +
@@ -20,7 +20,7 @@ every step can run out of time.
 ### The `generate` command
 
 The command is the same one as greedy decoding. `tokens.json` again holds a
-count, and there is no temperature. The ids must match a run that recomputes the
+count, and there is no temperature. The IDs must match a run that recomputes the
 whole sequence at every step.
 
 A key and a value are the key and value parts of each row's `c_attn` output,
@@ -49,14 +49,14 @@ work on one row at a time, so they only need the new row.
 In this example `ids.json` is `[0, 1, 0]` and `tokens.json` is
 `{ "count": 3 }`. The model has two tokens, and the rows of `wpe.weight` differ
 from each other, so a new token embedded at the wrong position changes what
-comes out. The ids are:
+comes out. The IDs are:
 
 ```json
 [0, 1, 1]
 ```
 
 A `generate` that recomputes the whole sequence at every step prints the same
-three ids for the same files. The cache changes the arithmetic. The answer
+three IDs for the same files. The cache changes the arithmetic. The answer
 stays the same.
 
 ### Tests
@@ -73,9 +73,9 @@ Your program must print:
 [0, 1, 1]
 ```
 
-The ids have to match exactly. The tester will also run a two-id prompt, where
+The IDs have to match exactly. The tester will also run a two-ID prompt, where
 embedding each new token at position 0 instead of at its index in the whole
-sequence changes the ids, and a two-layer model with random weights, where each
+sequence changes the IDs, and a two-layer model with random weights, where each
 layer needs keys and values of its own.
 
 ### Notes
