@@ -3,12 +3,12 @@ recomputing the whole sequence.
 
 ### Why keep keys and values?
 
-A new token needs its own query, key, and value. The keys and values of the
-tokens already written do not change, so they can be kept and reused. Scoring a
-new token by running every earlier token through all of GPT-2's 12 layers again
-repeats that work. Keeping the keys and values makes the new ids come out the
-same, with less arithmetic. This is called a KV cache, short for key-value
-cache.
+A new token needs its own query, key, and value only when it is fed back in to
+produce another token. The keys and values of the tokens already written do not
+change, so they can be kept and reused. Scoring a new token by running every
+earlier token through all of GPT-2's 12 layers again repeats that work. Keeping
+the keys and values makes the new ids come out the same, with less arithmetic.
+This is called a KV cache, short for key-value cache.
 
 For "The capital of France is" and six new tokens, greedy decoding runs
 5 + 6 + 7 + 8 + 9 + 10 = 45 rows through each layer. Keeping the keys and values
