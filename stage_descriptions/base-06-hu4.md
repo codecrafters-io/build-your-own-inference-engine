@@ -10,6 +10,8 @@ multilayer perceptron, and it holds about two-thirds of a block's numbers.
 
 It's two multiplies by a weight with a function called GELU between them. The
 first widens the row from 768 numbers to 3,072, and the second brings it back.
+GELU keeps positive numbers near themselves and pushes negative ones toward 0,
+so the wide middle has something to learn that two multiplies alone could not.
 
 The MLP is wrapped the way attention is, with a layer norm of its own, so a
 block normalizes twice:
@@ -77,33 +79,6 @@ Print one JSON array of rows:
 ```json
 [[-0.15878819, 3.84116958]]
 ```
-
-### Hints
-
-<details>
-<summary>What do the new steps look like as pseudocode?</summary>
-
-```text
-gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
-
-for each position i:
-    // row[i] is the row after attention was added onto it
-    n = layer_norm(row[i], ln_2.weight, ln_2.bias)
-    wide = gelu(each number of (n × mlp.c_fc.weight + mlp.c_fc.bias))
-    row[i] = row[i] + (wide × mlp.c_proj.weight + mlp.c_proj.bias)
-```
-
-</details>
-
-<details>
-<summary>What does GELU do?</summary>
-
-GELU keeps positive numbers close to themselves and pushes negative ones toward
-0. Without it, the two multiplies would each be a multiply and an add, and two
-of those in a row work out to a single multiply and add. The wider middle would
-add nothing.
-
-</details>
 
 ### Tests
 

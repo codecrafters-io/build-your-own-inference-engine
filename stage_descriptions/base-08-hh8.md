@@ -50,17 +50,6 @@ token 1:
 [1, 1]
 ```
 
-### Hints
-
-<details>
-<summary>How do I keep the lower id on a tie?</summary>
-
-Go through the ids from 0 upward, and replace the best id only when a score is
-strictly greater than the best so far. An equal score then keeps the earlier,
-lower id.
-
-</details>
-
 ### Tests
 
 The tester will write the four files and execute your program like this:

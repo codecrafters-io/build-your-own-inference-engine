@@ -3,14 +3,13 @@ itself and the rows before it.
 
 ### Why attention?
 
-After embedding, the row for a token is only that token. For example, take the
-sentence "The capital of France is". The row for "is" does not yet depend on
-"France", so nothing in it says which capital comes next.
+After embedding, the row for a token is only that token: in "The capital of
+France is", the row for "is" doesn't depend on "France", so nothing in it says
+which capital comes next.
 
-Attention fixes this by replacing each row with a weighted average of the values
-it takes from itself and the rows before it. Later words don't exist yet when
-GPT-2 writes a word. For
-example, in one of its later layers, GPT-2 gives the row for "is" these weights:
+Attention replaces each row with a weighted average of itself and the rows
+before it. GPT-2 writes left to right, so later rows don't exist yet. In one of
+its later layers, GPT-2 gives the row for "is" these weights:
 
 | Word | Weight |
 | --- | --- |
@@ -20,28 +19,30 @@ example, in one of its later layers, GPT-2 gives the row for "is" these weights:
 | "France" | 0.571 |
 | "is" | 0.058 |
 
-More than half of the new row for "is" comes from "France". Most of what's left,
-0.347, sits on "The", the first word.
+More than half of the new row for "is" comes from "France", and 0.347 of it
+from "The".
 
 ### Where the weights come from
 
-Attention turns every row into three lists of numbers. The query is the question
-the row asks, the key is what the row says about itself, and the value is what
-the row passes on when it matches. The row for "is" might ask "which earlier
-word names a place?", and the row for "France" might answer "I name a place."
+Attention turns every row into three lists of numbers: the query is the question
+the row asks, the key is what it says about itself, and the value is what it
+passes on when it matches. The row for "is" might ask "which earlier word names
+a place?", and "France" answers "I name a place."
 
-A score is how well one row's key answers another row's query. It is the dot
-product of the two: multiply them number by number, and add up the products. The
-pair above scores highly.
+A score is how well one row's key answers another row's query: the dot product
+of the two, divided by the square root of `n_embd`. Longer queries give larger
+dot products, and large scores make softmax put almost all the weight on one
+position; dividing by the square root of the length keeps scores in the same
+range whatever the length. The pair above scores highly.
+
 [Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/)
 then turns a row's scores into weights that add up to 1, by raising `e` to each
 score and dividing by their total. A score that leads by 2 gets about 7 times
 the weight.
 
-A query, a key, and a value, with the weights they give, make up one head.
-GPT-2 runs 12 heads side by side, and the weights for "is" above came from one
-of them. In this stage, `attn` runs a single head. You'll add the others in
-later stages.
+A query, a key, a value, and their weights make up one head. GPT-2 runs 12 side
+by side, and the weights above came from one of them. `attn` runs a single head;
+later stages add the rest.
 
 ### The `attn` command
 
@@ -60,8 +61,8 @@ later stages.
     - `h.0.attn.c_attn.bias`, with shape `[3 * n_embd]`
     - `h.0.attn.c_proj.weight`, with shape `[n_embd, n_embd]`
     - `h.0.attn.c_proj.bias`, with shape `[n_embd]`
-- The layer number is the layer to run: `0`. The file holds every layer's
-  weights, and `attn` runs one of them.
+- The layer number is the layer to run: `0`. The file holds every layer, and
+  `attn` runs one.
 - `input.json` is a JSON array of the rows to mix, one row per position:
   `[[1], [2]]`.
 
@@ -70,14 +71,13 @@ Multiplying a row by a weight means
 a row of `n` numbers times a weight of shape `[n, m]` gives `m` numbers, where
 number `j` is the dot product of the row with column `j`.
 
-`attn` turns each input row into an output row of the same length. Compute each
-position's output row like this:
+Compute each position's output row like this:
 
 1. Multiply the position's row by `c_attn.weight` and add `c_attn.bias`. Split
    the result into three equal parts: the query, the key, and the value.
 2. Score the position against itself and every earlier position. A score is the
    dot product of this position's query with the other position's key, divided
-   by the square root of `n_embd`, the count of numbers in a query.
+   by the square root of `n_embd`.
 3. [Softmax](https://nipunbatra.github.io/interactive-articles/softmax-temperature/)
    the scores into weights.
 4. Add up the scored positions' values, each multiplied by its weight.
@@ -85,9 +85,8 @@ position's output row like this:
 
 ### One head, step by step
 
-In this example `n_embd` is 1, so every row, query, key, and value is a single
-number, and the input is `[[1], [2]]`. Each step's result is shown under its
-number:
+Here `n_embd` is 1, so every row, query, key, and value is a single number, and
+the input is `[[1], [2]]`. Each step's result sits under its number:
 
 ```text
 // 1. row × c_attn.weight [[1, 1, 1]] + c_attn.bias [0, 0, 0]
@@ -116,45 +115,6 @@ Print one JSON array of rows:
 [[1.0], [1.8807970779778822]]
 ```
 
-### Hints
-
-<details>
-<summary>What does the whole algorithm look like as pseudocode?</summary>
-
-```text
-// input[i] is the row at position i of input.json, counting from 0
-
-for each position i:
-    // 1. query, key, and value, n_embd numbers each
-    qkv = input[i] × c_attn.weight + c_attn.bias
-    q[i] = qkv[0 : n_embd]
-    k[i] = qkv[n_embd : 2 * n_embd]
-    v[i] = qkv[2 * n_embd : 3 * n_embd]
-
-for each position i:
-    for each position j from 0 to i:      // itself and earlier only
-        // 2. how well j's key answers i's query
-        score[j] = dot(q[i], k[j]) / sqrt(n_embd)
-    // 3. scores to weights that add up to 1
-    weight = softmax(score[0], ..., score[i])
-    // 4. the weighted average of the values
-    out[i] = sum over j of weight[j] * v[j]
-    // 5. the output projection
-    result[i] = out[i] × c_proj.weight + c_proj.bias
-```
-
-</details>
-
-<details>
-<summary>Why divide the scores by the square root of `n_embd`?</summary>
-
-A dot product adds one product per number, so longer queries give larger scores.
-Large scores make the softmax put almost all the weight on one position.
-Dividing by the square root of the length keeps the scores in the same range
-whatever the length.
-
-</details>
-
 ### Tests
 
 The tester will write the three files from the example, then execute your
@@ -171,10 +131,10 @@ Your program must print:
 ```
 
 The tester allows a difference of 0.0001 on each number. It will also run two
-models whose weights are random numbers between -1 and 1, with rows of four
-numbers: one for layer 0, and one that reads layer 1 of a two-layer file. The
-numbers change on every run, and the tester's log lists every tensor it wrote.
-Every `config.json` in this stage has an `n_head` of 1.
+random-weight models with rows of four numbers: one for layer 0, and one that
+reads layer 1 of a two-layer file. The numbers change on every run, and the log
+lists every tensor it wrote. Every `config.json` in this stage has an `n_head`
+of 1.
 
 ### Notes
 

@@ -86,28 +86,6 @@ Print one JSON array of rows:
 [[0.0, 3.0]]
 ```
 
-### Hints
-
-<details>
-<summary>What does this look like as pseudocode?</summary>
-
-```text
-layer_norm(row, weight, bias):
-    mean = the average of the row's numbers
-    variance = the average of (x - mean)^2 over the row's numbers
-    for each index i:
-        x = (row[i] - mean) / sqrt(variance + 0.00001)
-        out[i] = x * weight[i] + bias[i]
-
-normed = layer_norm(each row, ln_1.weight, ln_1.bias)
-attended = attention(normed)
-
-for each position i:
-    result[i] = row[i] + attended[i]
-```
-
-</details>
-
 ### Tests
 
 The tester will write the same three files as for `attn`. For this example, the

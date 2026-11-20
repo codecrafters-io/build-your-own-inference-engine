@@ -43,7 +43,7 @@ build.
 
 Generation itself starts with the embeddings, from the token ids.
 
-`inspect` generates nothing, and it keeps earning its place after this stage.
+`inspect` generates nothing, and it keeps earning its place in later stages.
 When numbers come out wrong, it shows what your engine actually loaded.
 
 ### The `inspect` command

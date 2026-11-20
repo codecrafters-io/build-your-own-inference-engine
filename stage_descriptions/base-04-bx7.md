@@ -3,9 +3,9 @@ that each get their own weights.
 
 ### Why more than one head?
 
-Your `attn` gives each row one set of weights. For example, take the sentence
-"The capital of France is". More than half of the weight for "is" went to
-"France", which leaves little for anything else the row might need.
+Your `attn` gives each row one set of weights. In "The capital of France is",
+more than half the weight for "is" went to "France", which leaves little for
+anything else the row might need.
 
 GPT-2 looks in 12 ways at once. It splits each query, key, and value into 12
 slices, called heads, and each head works out its own weights from its own
@@ -19,9 +19,9 @@ slice. Here are two of GPT-2's heads for "is", in the same layer:
 | "France" | 0.571 | 0.047 |
 | "is" | 0.058 | 0.069 |
 
-The left column is the head you saw before. The second puts about a quarter of
+The left column is the head you saw before; the second puts about a quarter of
 its weight on "capital" and almost none on "France". Each head takes its own
-weighted average, and the results go side by side to make the new row.
+weighted average, and the results go side by side.
 
 ### Splitting into heads
 
@@ -70,40 +70,6 @@ its row stays `[1, 0]`. Print one JSON array of rows:
 ```json
 [[1.0, 0.0], [0.5, 0.7310585786300049]]
 ```
-
-With one head, the same files give `[0.330, 0.670]` for position 1, because the
-softmax then runs once over both scores.
-
-### Hints
-
-<details>
-<summary>What does the whole algorithm look like as pseudocode?</summary>
-
-```text
-size = n_embd / n_head                    // numbers per head
-
-// q[i], k[i], and v[i] are position i's query, key, and value, as before
-
-for each position i:
-    for each head h:
-        a, b = h * size, (h + 1) * size   // this head's slice
-        for each position j from 0 to i:
-            score[j] = dot(q[i][a : b], k[j][a : b]) / sqrt(size)
-        weight = softmax(score[0], ..., score[i])
-        out[i][a : b] = sum over j of weight[j] * v[j][a : b]
-    result[i] = out[i] × c_proj.weight + c_proj.bias
-```
-
-</details>
-
-<details>
-<summary>Why does the division change to the head size?</summary>
-
-The division keeps scores in the same range whatever the length of the query. A
-head's score now adds up only the products in its slice, so the length that
-matters is the slice's. GPT-2's heads have 64 numbers, so it divides by 8.
-
-</details>
 
 ### Tests
 
