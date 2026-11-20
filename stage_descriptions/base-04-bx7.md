@@ -19,7 +19,7 @@ slice. Here are two of GPT-2's heads for "is", in the same layer:
 | "France" | 0.571 | 0.047 |
 | "is" | 0.058 | 0.069 |
 
-The left column is the head you saw before; the second puts about a quarter of
+The left column is the head you saw before. The second puts about a quarter of
 its weight on "capital" and almost none on "France". Each head takes its own
 weighted average, and the results go side by side.
 
