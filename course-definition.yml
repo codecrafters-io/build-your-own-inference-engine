@@ -4,7 +4,7 @@
 slug: "inference-engine"
 name: "Build your own Inference Engine"
 short_name: "Inference Engine"
-release_status: "alpha"
+release_status: "early_access"
 
 description_md: |-
   Why does "The capital of France is" always continue with the same words?
@@ -22,14 +22,8 @@ completion_percentage: 5
 
 languages:
   - slug: "python"
-    release_status: "alpha"
-    alpha_tester_usernames: ["VIDIT45AGARWAL", "aayush0325", "flcrom", "shirshaksengupta", "tinvaan", "jayeshpuri", "niranjan94"]
   - slug: "rust"
-    release_status: "alpha"
-    alpha_tester_usernames: ["VIDIT45AGARWAL", "aayush0325", "flcrom", "shirshaksengupta", "tinvaan", "jayeshpuri", "niranjan94"]
   - slug: "go"
-    release_status: "alpha"
-    alpha_tester_usernames: ["VIDIT45AGARWAL", "aayush0325", "flcrom", "shirshaksengupta", "tinvaan", "jayeshpuri", "niranjan94"]
 
 marketing:
   difficulty: hard
