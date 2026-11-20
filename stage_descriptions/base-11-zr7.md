@@ -1,15 +1,15 @@
-In this stage, you'll run your `generate` command on GPT-2's real weights.
+In this stage, you'll run your `generate` command on GPT-2's own weights.
 
 ### Why run GPT-2?
 
-Every file so far was a tiny model built to check one rule. GPT-2's real file
+Every file so far was a tiny model built to check one rule. GPT-2's own file
 uses the same tensor names, at full size: 160 tensors holding 124 million
-weights. Your engine already runs every step GPT-2 runs, so on the real weights
+weights. Your engine already runs every step GPT-2 runs, so on these weights
 it should write the same words GPT-2 does.
 
-For example, take the prompt "The capital of France is". Its ids are
+For example, take the prompt "The capital of France is". Its IDs are
 `[464, 3139, 286, 4881, 318]`. GPT-2 continues it with " the capital of the
-French Republic". Those six ids are:
+French Republic". Those six IDs are:
 
 ```json
 [262, 3139, 286, 262, 4141, 2066]
@@ -55,37 +55,37 @@ $ ./your_program.sh generate model.safetensors config.json ids.json tokens.json
 [262, 3139, 286, 262, 4141, 2066]
 ```
 
-The ids have to match exactly. The tester will also turn your ids back into
+The IDs have to match exactly. The tester will also turn your IDs back into
 text and print what your engine wrote, " the capital of the French Republic".
 
 This test takes longer than the earlier ones. The tester first downloads GPT-2's
-weights, which takes 5 to 15 seconds, and then your engine runs all 12 layers
-for every token.
+weights into a cache, which takes a few seconds, and then your engine runs all
+12 layers for every token. The tester stops your program after 300 seconds.
 {{#lang_is_python}}
-A Python engine that reuses keys and values takes about 45 seconds on a laptop,
-and can take longer on the test servers. The tester stops your program after
-300 seconds, so an engine that recomputes the whole sequence at every step can
-run out of time.
-{{/lang_is_python}}
-{{^lang_is_python}}
-A {{language_name}} engine finishes in a few seconds.
+Running the whole sequence again at every step does about four times the
+arithmetic here. In Python that gap can be the difference between passing and
+running out of time.
 {{/lang_is_python}}
 
 ### Notes
 
 - To run GPT-2 on your own machine, download its weights from
   [Hugging Face](https://huggingface.co/openai-community/gpt2) into a folder
-  outside your repository, so the 548 MB file never ends up in a commit. Then
-  use the `config.json` above:
+  outside your repository, so the 548 MB file never ends up in a commit:
 
     ```bash
     mkdir -p /tmp/testing && cd /tmp/testing
     curl -L -o model.safetensors https://huggingface.co/openai-community/gpt2/resolve/main/model.safetensors
     ```
 
-- To read your ids as text, download
+    Save the `config.json` above into that folder as `config.json`, along with
+    `ids.json` holding `[464, 3139, 286, 4881, 318]` and `tokens.json` holding
+    `{"count": 6}`. Then run your program from that folder:
+    `/path/to/your_program.sh generate model.safetensors config.json ids.json tokens.json`.
+
+- To read your IDs as text, download
   [`vocab.json`](https://huggingface.co/openai-community/gpt2/blob/main/vocab.json)
-  from the same page. It maps each token's text to its id, and a leading `Ġ`
+  from the same page. It maps each token's text to its ID, and a leading `Ġ`
   stands for a space. For a prompt whose words are each a single token, look up
   each word there to build `ids.json`.
 - Past six tokens, GPT-2's top two scores can be very close. At the seventh

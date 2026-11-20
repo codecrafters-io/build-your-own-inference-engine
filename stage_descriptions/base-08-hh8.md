@@ -6,11 +6,11 @@ highest-scoring token.
 Logits score every possible next token, but writing text means choosing one.
 Greedy decoding is the simplest choice. It takes the highest score, appends that
 token, and scores the longer sequence again. It uses no randomness, so the same
-prompt always continues the same way, and you can check every id it writes.
+prompt always continues the same way, and you can check every ID it writes.
 
 Here is GPT-2 continuing "The capital of France is", one step at a time:
 
-| Step | Picked | Runner-up | Lead |
+| Step | Picked | Runner-up | Logit lead |
 | --- | --- | --- | --- |
 | 1 | " the" | " now" | 0.57 |
 | 2 | " capital" | " city" | 1.62 |
@@ -31,7 +31,7 @@ Republic" from " the capital of France".
 { "count": 2 }
 ```
 
-Generate the new ids like this:
+Generate the new IDs like this:
 
 ```text
 repeat count times:
@@ -50,17 +50,6 @@ token 1:
 [1, 1]
 ```
 
-### Hints
-
-<details>
-<summary>How do I keep the lower id on a tie?</summary>
-
-Go through the ids from 0 upward, and replace the best id only when a score is
-strictly greater than the best so far. An equal score then keeps the earlier,
-lower id.
-
-</details>
-
 ### Tests
 
 The tester will write the four files and execute your program like this:
@@ -75,9 +64,9 @@ Your program must print:
 [1, 1]
 ```
 
-The ids have to match exactly. The tester will also run a file where every token
+The IDs have to match exactly. The tester will also run a file where every token
 has the same score, and a two-layer model with random weights, where the four
-new ids are not all the same.
+new IDs are not all the same.
 
 ### Notes
 

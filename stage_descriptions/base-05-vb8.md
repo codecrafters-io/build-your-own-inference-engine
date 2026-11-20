@@ -5,7 +5,7 @@ layer norm and a residual add.
 
 `attn` replaces each row with a weighted average of itself and the rows before
 it, and that throws something away. In the weights you saw when you built
-`attn`, only 0.06 of the new row for "is" came from "is". The rest came from
+`attn`, only 0.058 of the new row for "is" came from "is". The rest came from
 "France" and "The", so the row now says what the sentence is about and has
 nearly forgotten which word it is.
 
@@ -50,7 +50,8 @@ row ─┬─► ln_1 ─► attention ─► + ─► output
 
 1. Layer-normalize a copy of each row with `ln_1.weight` and `ln_1.bias`.
 2. Run attention on those copies, the same way `attn` does.
-3. Add the attention output onto the block's input rows, not onto the copies.
+3. Add the attention output onto the block's input rows rather than the
+   normalized copies.
 
 Layer norm is one formula, with 0.00001 from GPT-2's own definition. The mean
 and the variance are taken over the row's numbers, and the variance is the
@@ -85,28 +86,6 @@ Print one JSON array of rows:
 [[0.0, 3.0]]
 ```
 
-### Hints
-
-<details>
-<summary>What does this look like as pseudocode?</summary>
-
-```text
-layer_norm(row, weight, bias):
-    mean = the average of the row's numbers
-    variance = the average of (x - mean)^2 over the row's numbers
-    for each index i:
-        x = (row[i] - mean) / sqrt(variance + 0.00001)
-        out[i] = x * weight[i] + bias[i]
-
-normed = layer_norm(each row, ln_1.weight, ln_1.bias)
-attended = attention(normed)
-
-for each position i:
-    result[i] = row[i] + attended[i]
-```
-
-</details>
-
 ### Tests
 
 The tester will write the same three files as for `attn`. For this example, the
@@ -138,5 +117,5 @@ two-layer file. Those models have two heads.
 - Divide by the count of numbers in the row when you take the variance. Many
   built-in variance functions divide by one less, which turns 0.25 into 0.5 for
   the row `[1, 2]` and the output into `[0.29, 2.71]` instead of `[0, 3]`.
-- The file also holds `ln_2` and the MLP tensors, which later stages use. They
-  are all zeros here, so you can ignore them for now.
+- The file also holds `ln_2` and the MLP tensors. The MLP tensors are all zeros
+  here, so you can ignore them until later stages.

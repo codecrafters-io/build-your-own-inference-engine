@@ -18,8 +18,8 @@ the five highest after "The capital of France is":
 | " France" | -101.21 |
 | " Paris" | -101.21 |
 
-The logits are all near -100, and that's normal. Only the differences between
-them matter, so " the" leads " now" by 0.57.
+The top of the list is around -100, and that's normal. Only the differences
+between logits matter, so " the" leads " now" by 0.57.
 
 ### The `logits` command
 
@@ -49,8 +49,9 @@ for each token t:
 The logits reuse the `wte.weight` table that `embed` reads. There is no
 separate output table.
 
-In this example the ids are `[0]`. `ln_f.bias` is `[1, -1]` and `ln_f.weight`
-is `[0, 0]`, so the normalized row is `[1, -1]`. The token rows are `[1, 1]` and
+In this example `n_embd` is 2 and there is one layer. The IDs are `[0]`.
+`ln_f.bias` is `[1, -1]` and `ln_f.weight` is `[0, 0]`, so the final layer norm
+returns `[1, -1]` whatever the last row held. The token rows are `[1, 1]` and
 `[1, -1]`. The dot products are `1 * 1 + -1 * 1 = 0` and
 `1 * 1 + -1 * -1 = 2`.
 
@@ -68,14 +69,13 @@ The tester will write the three files and execute your program like this:
 $ ./your_program.sh logits model.safetensors config.json ids.json
 ```
 
-Your program must print:
+It accepts a difference of 0.001 on each number, or 0.001 times the expected
+number, whichever is larger. For this example, your program should print:
 
 ```json
 [0.0, 2.0]
 ```
 
-The tester allows a difference of 0.001 on each number, or 0.001 times the
-expected number, whichever is larger. It will also run two models whose
-weights are random numbers between -1 and 1, each with six tokens and a
-three-id sequence, where only the last position is scored. One has a single
-layer, and the other has two.
+It will also run two models whose weights are random numbers between -1 and 1,
+each with six tokens and a three-ID sequence, where only the last position is
+scored. One has a single layer, and the other has two.

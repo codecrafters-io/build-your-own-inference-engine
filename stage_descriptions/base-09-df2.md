@@ -32,7 +32,7 @@ until their probabilities add up to `top_p`. With a `top_p` of 0.9, that's
 ```
 
 When `tokens.json` has no `temperature`, keep taking the highest score as
-before. The tester still runs those files, with nothing on stdin.
+before. Later stages still run files like that, with nothing on stdin.
 
 Stdin has one number per new token, each between 0 and 1. Read them as text, one
 per line. Pick each new token like this:
@@ -74,14 +74,15 @@ Your program must print:
 [1]
 ```
 
-The ids have to match exactly. The tester will also run two models with random
+The IDs have to match exactly. The tester will also run two models with random
 weights, asking each for four new tokens and sending four random numbers. One
 has a `top_p` below 1, and the other has a temperature other than 1.
 
 ### Notes
 
 - `top_p` of 1 keeps every token that has a probability above 0.
-- GPT-2's logits are all near -100. In 32-bit floats, raising `e` to a number
-  that low gives 0, and the softmax then divides 0 by 0. Subtract the largest
-  logit from every logit first. The probabilities come out the same, because
-  softmax only depends on the differences between logits.
+- GPT-2's logits are all far below zero, and in 32-bit floats most of their
+  exponentials underflow to exactly 0. The few that survive keep only a few
+  bits, so the probabilities come out wrong. Subtract the largest logit from
+  every logit before the softmax. The probabilities then come out the same,
+  because softmax only depends on the differences between logits.

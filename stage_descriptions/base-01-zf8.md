@@ -1,13 +1,17 @@
-In this stage, you'll implement the `inspect` command to print what's inside a
-trained model's file.
+Generation needs the weights read correctly before it can do anything with
+them. In this stage, you'll implement the `inspect` command to print what's
+inside a trained model's file.
 
 ### How an inference engine works
 
 An inference engine is the program that runs a trained model. The model here is
 GPT-2, and it comes already trained, as a file of numbers called its weights.
 
-GPT-2's weights are in a file called `model.safetensors`. It holds 160 named
-tables of numbers:
+Those numbers sit in a file called `model.safetensors`, in 160 named tables.
+The tables are called
+[tensors](https://app.codecrafters.io/concepts/tensors). They hold numbers
+arranged in different ways, for example 4 numbers in a single list, or 6
+numbers in 2 rows of 3.
 
 ```text
 model.safetensors
@@ -19,40 +23,28 @@ model.safetensors
 └── ln_f.bias
 ```
 
-GPT-2 doesn't read words. It reads token ids, numbers that each stand for a
+GPT-2 doesn't read words. It reads token IDs, numbers that each stand for a
 word or a part of a word. For example, the prompt "The capital of France is"
-becomes the ids `[464, 3139, 286, 4881, 318]`.
+becomes the IDs `[464, 3139, 286, 4881, 318]`.
 
 The weights do nothing on their own. Reading the file, running the layers, and
-choosing each next word are the engine's work, and the engine is what you
+choosing each next token are the engine's work, and the engine is what you
 build.
 
-| Step | What it does | Stages |
-| --- | --- | --- |
-| Inspect | Reads every tensor's name, shape, and first numbers. Preparation, not generation | Read safetensors |
-| Embed | Turns each token id into a row of numbers | Embed tokens |
-| Attend | Mixes earlier tokens into the current one | Causal attention, Multi-head attention, Residual connections, Transformer block |
-| Score | Scores every possible next token | Logits |
-| Pick | Takes the highest score, or samples | Greedy decode, Sample a token |
-| Repeat | Feeds the new token back in, reusing past work | KV cache |
-| Run | All of it on GPT-2's real 548 MB file | Run GPT-2 |
+| Step | What it does |
+| --- | --- |
+| Inspect | Reads every tensor's name, shape, and first numbers |
+| Embed | Turns each token ID into a row of numbers |
+| Attend | Mixes earlier tokens into the current one |
+| Score | Scores every possible next token |
+| Pick | Takes the highest score, or samples |
+| Repeat | Feeds the new token back in, reusing past work |
+| Run | Does all of it on GPT-2's own weights |
 
-You build each row in one or two stages. Generation itself starts at Embed,
-with the token ids. Inspect comes first because it makes the weights readable,
-and checkable.
+Generation itself starts with the embeddings, from the token IDs.
 
-### Why start with inspect?
-
-The model file is a set of named tables of numbers. The tables are called
-[tensors](https://app.codecrafters.io/concepts/tensors). They hold numbers
-arranged in different ways, for example 4 numbers in a single list, or 6
-numbers in 2 rows of 3.
-
-To generate text, your engine does arithmetic with these numbers, so it has to
-read them correctly first. `inspect` prints every tensor's name, data type,
-shape, and first numbers, so you can see exactly what your engine loaded. It
-keeps earning its place after this stage. When numbers in later stages come out
-wrong, `inspect` is how you check what you loaded.
+`inspect` generates nothing, and it keeps earning its place in later stages.
+When numbers come out wrong, it shows what your engine actually loaded.
 
 ### The `inspect` command
 
@@ -90,9 +82,12 @@ The file uses a format called
 code's loader already reads it, and returns every tensor's `dtype`, shape, and
 numbers, by name.
 
-That's the entire exercise: load the tensors, pick out a few values, and print
+That's the entire stage: load the tensors, pick out a few values, and print
 them as JSON. There's no model arithmetic in this stage. Later stages do the
 computing, on the tensors the loader returns.
+
+Print only the JSON to stdout. Send debug output to stderr, the way the starter
+code prints its `Logs from your program will appear here!` line.
 
 ### Tests
 
