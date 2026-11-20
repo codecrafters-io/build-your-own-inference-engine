@@ -69,14 +69,13 @@ The tester will write the three files and execute your program like this:
 $ ./your_program.sh logits model.safetensors config.json ids.json
 ```
 
-Your program must print:
+It accepts a difference of 0.001 on each number, or 0.001 times the expected
+number, whichever is larger. For this example, your program should print:
 
 ```json
 [0.0, 2.0]
 ```
 
-The tester allows a difference of 0.001 on each number, or 0.001 times the
-expected number, whichever is larger. It will also run two models whose
-weights are random numbers between -1 and 1, each with six tokens and a
-three-id sequence, where only the last position is scored. One has a single
-layer, and the other has two.
+It will also run two models whose weights are random numbers between -1 and 1,
+each with six tokens and a three-id sequence, where only the last position is
+scored. One has a single layer, and the other has two.

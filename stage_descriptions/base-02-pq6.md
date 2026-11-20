@@ -134,6 +134,6 @@ lists every tensor it wrote.
 - A slice of `values` is a
   [`memoryview`](https://docs.python.org/3/builtins/stdtypes.html#memoryview),
   which `json.dumps` can't print, so build each embedding as a list. Keep the
-  tensors themselves as the loader returns them. GPT-2's real weights wouldn't
-  fit in the test server's memory as Python floats.
+  tensors themselves as the loader returns them. GPT-2's weights wouldn't fit in
+  the test server's memory as Python floats.
 {{/lang_is_python}}
